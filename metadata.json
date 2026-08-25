@@ -1,0 +1,8 @@
+{
+  "name": "JCCF FUTA",
+  "description": "Official digital platform for JCCF FUTA (Joint Christian Campus Fellowship, Federal University of Technology Akure) uniting campus Christian fellowships, events, executives, media, and resources.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
