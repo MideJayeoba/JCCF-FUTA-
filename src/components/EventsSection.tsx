@@ -31,7 +31,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const categories = ['All', 'Mega Service', 'Academic', 'Prayer', 'Conference', 'Special'];
+  const categories = ['All', 'Mega Service', 'Teaching Weekend', 'Prayer', 'Conference', 'Special'];
 
   const filteredEvents = events.filter((ev) => {
     const matchesCategory = selectedCategory === 'All' || ev.category === selectedCategory;
@@ -67,7 +67,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
             Upcoming Events
           </h2>
           <p className="text-[#666666] mt-3 text-sm sm:text-base leading-relaxed">
-            Experience the move of God across FUTA campus in our united conferences, prayer vigils, and academic summits.
+            Experience the move of God across FUTA campus in our united conferences, prayer vigils, and teaching weekends.
           </p>
         </div>
 

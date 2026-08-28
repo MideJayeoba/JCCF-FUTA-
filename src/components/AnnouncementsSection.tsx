@@ -26,7 +26,7 @@ export const AnnouncementsSection: React.FC<AnnouncementsSectionProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const categories = ['All', 'Official Notice', 'Academic', 'Welfare', 'Spiritual', 'Event Alert'];
+  const categories = ['All', 'Official Notice', 'Secretariat', 'Welfare', 'Spiritual', 'Event Alert'];
 
   const filteredAnnouncements = announcements.filter((item) => {
     const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
@@ -53,7 +53,7 @@ export const AnnouncementsSection: React.FC<AnnouncementsSectionProps> = ({
             Announcements
           </h2>
           <p className="text-[#666666] mt-3 text-sm sm:text-base leading-relaxed">
-            Stay informed with verified notifications, academic support timetables, and campus welfare updates from JCCF Secretariat.
+            Stay informed with verified notifications, fellowship circulars, and campus welfare updates from JCCF Secretariat.
           </p>
         </div>
 

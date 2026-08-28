@@ -65,7 +65,7 @@ export const FellowshipsSection: React.FC<FellowshipsSectionProps> = ({
             Find Your Fellowship
           </h2>
           <p className="text-[#666666] mt-3 text-sm sm:text-base leading-relaxed">
-            Discover Christian fellowships across FUTA and find a community where you can grow spiritually, academically, and socially.
+            Discover registered Christian fellowships across FUTA and find a spiritual community where you can grow in faith and fellowship.
           </p>
         </div>
 
@@ -154,9 +154,24 @@ export const FellowshipsSection: React.FC<FellowshipsSectionProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-start gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-[#B5121B] shrink-0 mt-0.5" />
-                      <span className="text-[#666666] line-clamp-1">{fellowship.meetingVenue}</span>
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="flex items-start gap-2">
+                        <MapPin className="w-3.5 h-3.5 text-[#B5121B] shrink-0 mt-0.5" />
+                        <span className="text-[#666666] line-clamp-1">{fellowship.meetingVenue}</span>
+                      </div>
+                      {fellowship.mapUrl && (
+                        <a
+                          href={fellowship.mapUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-[11px] font-bold text-[#B5121B] hover:underline flex items-center gap-1 shrink-0 ml-2"
+                          title="Open in Google Maps"
+                        >
+                          <span>Map</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -260,6 +275,41 @@ export const FellowshipsSection: React.FC<FellowshipsSectionProps> = ({
                   <strong className="text-[#B5121B] mt-0.5 block">{selectedFellowshipModal.presidentContact}</strong>
                 </div>
               </div>
+
+              {/* Google Maps Location Button */}
+              {selectedFellowshipModal.mapUrl ? (
+                <a
+                  href={selectedFellowshipModal.mapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3.5 rounded-xl bg-[#FDECEC] border border-[#F8D0D0] hover:bg-[#FCD8D8] text-[#8B0000] flex items-center justify-between transition-colors group cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <MapPin className="w-4 h-4 text-[#B5121B] shrink-0" />
+                    <div>
+                      <span className="text-xs font-bold text-[#171717] block">Open Fellowship Location in Google Maps</span>
+                      <span className="text-[11px] text-[#666666]">{selectedFellowshipModal.meetingVenue} (FUTA Campus)</span>
+                    </div>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-[#B5121B] group-hover:translate-x-0.5 transition-transform" />
+                </a>
+              ) : (
+                <a
+                  href={`https://maps.google.com/?q=${encodeURIComponent(selectedFellowshipModal.name + ' ' + selectedFellowshipModal.meetingVenue + ' FUTA Akure')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3.5 rounded-xl bg-[#FAFAFA] border border-[#E5E5E5] hover:bg-[#F5F5F5] text-[#171717] flex items-center justify-between transition-colors group cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <MapPin className="w-4 h-4 text-[#B5121B] shrink-0" />
+                    <div>
+                      <span className="text-xs font-bold text-[#171717] block">Find on Google Maps</span>
+                      <span className="text-[11px] text-[#666666]">{selectedFellowshipModal.meetingVenue} (FUTA Akure)</span>
+                    </div>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-[#666666] group-hover:translate-x-0.5 transition-transform" />
+                </a>
+              )}
 
               <div className="pt-2 flex items-center justify-between border-t border-[#E5E5E5]">
                 <span className="text-xs text-[#666666]">Established in FUTA: <strong>{selectedFellowshipModal.establishedYear}</strong></span>

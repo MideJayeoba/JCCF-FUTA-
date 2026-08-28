@@ -27,7 +27,7 @@ export const GivingSection: React.FC<GivingSectionProps> = ({ onOpenGiveModal })
 
           {/* Supporting Text */}
           <p className="text-base sm:text-lg text-white/90 leading-relaxed font-normal">
-            Your sacrificial giving sustains campus evangelism, finances the Student Welfare Food Bank for indigent students, provides free academic tutorial manuals, and powers the Annual Mega Praise.
+            Your sacrificial giving sustains campus evangelism, finances the Student Welfare Food Bank for indigent students, provides ministry materials, and powers the Annual Mega Praise.
           </p>
 
           {/* Key Giving Channels */}

@@ -2,39 +2,39 @@ import { TimelineMilestone } from '../types';
 
 export const JCCF_HISTORY_MILESTONES: TimelineMilestone[] = [
   {
-    year: '1982',
-    title: 'The Inception & First Fellowship Gatherings at FUTA',
-    description: 'Shortly after the establishment of the Federal University of Technology Akure in 1981, pioneering Christian students formed an inter-denominational prayer caucus to intercede for the new campus and support each other in faith and studies.',
-    tag: 'Foundation'
+    year: '1996/1997',
+    title: 'The Inception & First Gathering of Believers at FUTA',
+    description: 'The Joint Christian Campus Fellowship (JCCF) FUTA started from a small unit gathering of believers on campus in the late 1996/1997 session. At inception, its major purpose was centered on joint prayers for the campus, so it was not given a formal name.',
+    tag: 'Foundational Gathering'
   },
   {
-    year: '1988',
-    title: 'Formal Ratification of JCCF Constitution & Central Council',
-    description: 'With the growth of multiple denominational student fellowships (RCF, TACSFON, NIFES, CU, DLCF), the leaders converged to form the Joint Christian Campus Fellowship (JCCF) to maintain kingdom unity, coordinate campus service dates, and prevent date clashes.',
-    tag: 'Institutionalization'
+    year: '1996/1997',
+    title: 'Formal Establishment & First 5-Man Executive Council',
+    description: 'As time passed, FUTA management desired all student fellowships registered under a unified Christian body that could be responsible for them. This led to the formal establishment of JCCF FUTA with five pioneering executives: President, Vice-President, General Secretary, Treasurer, and Public Relations Officer, saddled with drafting the constitution.',
+    tag: 'Formal Establishment'
   },
   {
-    year: '1998',
-    title: 'Inaugural Joint Campus Mega Praise at FUTA',
-    description: 'JCCF organized the first campus-wide Mega Praise concert, drawing thousands of students, lecturers, and university management to unite in continuous praise and prayer for peaceful academic sessions.',
-    tag: 'Revival Landmark'
+    year: '1997/1998',
+    title: 'Constitutional Completion & University Registration',
+    description: 'A 7-man Executive Council comprising the President, Vice-President, General Secretary, Treasurer, Organizing Secretary, Prayer Secretary, and Public Relations Officer completed the constitution and formalized the registration of JCCF with FUTA management.',
+    tag: 'Ratification & Registration'
   },
   {
-    year: '2012',
-    title: 'Establishment of the Central Academic Mentorship Directorate',
-    description: 'To dismantle the misconception that spiritual commitment hinders academic performance, JCCF inaugurated the Academic Unit, producing dozens of First Class graduates who served as volunteer tutors.',
-    tag: 'Academic Dominion'
+    year: 'Foundational Traditions',
+    title: 'Introduction of Combined Prayers & Change of Pulpit',
+    description: 'The pioneer executives introduced noon combined prayers (first week of resumption), teaching weekend, and periodic intercessory sessions, alongside the sessional Change of Pulpit among member fellowships to foster love and unity amidst campus fellowships.',
+    tag: 'Spiritual Pillars'
   },
   {
-    year: '2020',
-    title: 'Digital Fellowship Infrastructure & Welfare Food Bank',
-    description: 'Faced with national academic disruptions, JCCF FUTA launched online spiritual broadcasts, virtual prayer chains, and an expanded student welfare emergency relief food bank.',
-    tag: 'Compassion & Growth'
+    year: '2024',
+    title: 'Constitution Review & Expansion to 25 Registered Fellowships',
+    description: 'Under the 26th Administration led by Ogunyimika Nifemi, the JCCFCOP and stakeholders (including Venerable Lasehinde, Prof. Ayodeji, Prof. Okunlola, Prof. Olukunle, and alumni) completed a comprehensive constitutional review, uniting 25 registered constituent fellowships across FUTA.',
+    tag: 'Reviewed Constitution'
   },
   {
-    year: '2026',
-    title: 'Expanding the Horizon: Reigning by Grace & Wisdom',
-    description: 'Today, JCCF FUTA connects over 15 distinct campus fellowships, over 3,500 active student believers, and coordinates 8 specialized ministry directorates across all 9 schools in the university.',
-    tag: 'Present Glory'
+    year: 'Present Vision',
+    title: 'Oneness of Purpose — Ephesians 4:13',
+    description: 'Endeavouring to keep the unity of the Spirit in the bond of peace, with emphasis not merely on the conglomeration of campus fellowships but the oneness of purpose pressing towards the mark of growing into the measure of the stature of the fullness of Christ.',
+    tag: 'Fullness of Christ'
   }
 ];

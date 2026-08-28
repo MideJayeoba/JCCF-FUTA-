@@ -53,6 +53,7 @@ import {
   DonationRecord,
   AuthorizedAdmin
 } from '../types';
+import { extractYouTubeId, fetchYouTubeMetadata, getYouTubeThumbnail } from '../lib/youtube';
 
 interface AdminDashboardProps {
   onNavigateHome: () => void;
@@ -162,6 +163,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
   const [mediaModalMode, setMediaModalMode] = useState<'create' | 'edit' | null>(null);
   const [activeMedia, setActiveMedia] = useState<Partial<MediaItem>>({});
   const [previewMedia, setPreviewMedia] = useState<MediaItem | null>(null);
+  const [youtubeUrlInput, setYoutubeUrlInput] = useState('');
+  const [isFetchingYouTube, setIsFetchingYouTube] = useState(false);
+  const [ytFetchError, setYtFetchError] = useState<string | null>(null);
 
   // Modals - Events
   const [eventModalMode, setEventModalMode] = useState<'create' | 'edit' | null>(null);
@@ -397,6 +401,42 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
     setActiveAnnouncement({});
   };
 
+  const handleAutoFetchYouTube = async (inputUrl: string) => {
+    const rawUrl = inputUrl.trim();
+    if (!rawUrl) return;
+    const vidId = extractYouTubeId(rawUrl);
+    if (!vidId) {
+      setYtFetchError('Could not recognize YouTube URL or ID. Please check the link format.');
+      return;
+    }
+    setIsFetchingYouTube(true);
+    setYtFetchError(null);
+    try {
+      const meta = await fetchYouTubeMetadata(vidId);
+      if (meta) {
+        setActiveMedia((prev) => ({
+          ...prev,
+          youtubeId: meta.videoId,
+          title: prev.title || meta.title,
+          minister: prev.minister || meta.authorName || 'JCCF Ministration',
+          thumbnail: meta.thumbnailUrl || prev.thumbnail,
+          description: prev.description || meta.description || 'Recorded ministration from JCCF FUTA Household.',
+          duration: prev.duration || meta.duration || 'Full Session'
+        }));
+      }
+    } catch {
+      const fallbackThumb = getYouTubeThumbnail(vidId, 'hq');
+      setActiveMedia((prev) => ({
+        ...prev,
+        youtubeId: vidId,
+        thumbnail: prev.thumbnail || fallbackThumb
+      }));
+      setYtFetchError('Could not auto-fetch title/author, but video ID and thumbnail have been successfully extracted.');
+    } finally {
+      setIsFetchingYouTube(false);
+    }
+  };
+
   const handleSaveMedia = (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeMedia.title || !activeMedia.minister) return;
@@ -464,7 +504,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
         bannerImage: activeFellowship.bannerImage || 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80',
         description: activeFellowship.description || '',
         establishedYear: activeFellowship.establishedYear || '1995',
-        futaLocation: activeFellowship.futaLocation || 'FUTA Main Campus'
+        futaLocation: activeFellowship.futaLocation || 'FUTA Main Campus',
+        mapUrl: activeFellowship.mapUrl || ''
       });
     }
     setFellowshipModalMode(null);
@@ -538,7 +579,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
     { id: 'events', label: 'Events Calendar', icon: Calendar, count: events.length },
     { id: 'fellowships', label: 'Fellowships Directory', icon: Users, count: fellowships.length },
     { id: 'executives', label: 'Executive Council', icon: Award, count: executives.length },
-    { id: 'resources', label: 'Past Questions & Library', icon: BookOpen, count: resources.length },
+    { id: 'resources', label: 'Constitution & Vault', icon: BookOpen, count: resources.length },
     { id: 'donations', label: 'Donations & Stewardship', icon: Heart, count: `₦${((Number(totalDonationsAmount) || 0) / 1000).toFixed(0)}k` },
     { id: 'access', label: 'Admin Access & PINs', icon: ShieldCheck, count: authorizedAdmins.length },
     { id: 'settings', label: 'Portal & Security', icon: Settings }
@@ -682,9 +723,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                   </div>
 
                   <div className="bg-white p-5 rounded-2xl border border-[#E5E5E5] space-y-1 shadow-xs">
-                    <span className="text-[11px] font-bold text-[#666666] uppercase">Study Past Questions</span>
-                    <h3 className="text-2xl font-black text-[#171717] font-heading">{resources.length} Archives</h3>
-                    <span className="text-[10px] text-[#8B0000] font-semibold block">All 9 Schools Covered</span>
+                    <span className="text-[11px] font-bold text-[#666666] uppercase">Constitution & Vault</span>
+                    <h3 className="text-2xl font-black text-[#171717] font-heading">{resources.length} Documents</h3>
+                    <span className="text-[10px] text-[#8B0000] font-semibold block">Official Publications</span>
                   </div>
 
                   <div className="bg-white p-5 rounded-2xl border border-[#E5E5E5] space-y-1 shadow-xs">
@@ -735,13 +776,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
 
                     <button
                       onClick={() => {
-                        setActiveResource({ category: 'Study Materials', fileType: 'PDF' });
+                        setActiveResource({ category: 'Constitutional', fileType: 'PDF' });
                         setResourceModalMode('create');
                       }}
                       className="px-4 py-2.5 bg-[#FAFAFA] hover:bg-[#E5E5E5] text-[#171717] border border-[#E5E5E5] text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>Upload Past Question</span>
+                      <span>Upload Document / Manual</span>
                     </button>
                   </div>
                 </div>
@@ -932,8 +973,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                         category: 'Sermon',
                         duration: '1 hr 15 mins',
                         date: 'August 2026',
-                        youtubeId: 'dQw4w9WgXcQ'
+                        youtubeId: ''
                       });
+                      setYoutubeUrlInput('');
+                      setYtFetchError(null);
                       setMediaModalMode('create');
                     }}
                     className="px-4 py-2.5 bg-[#B5121B] hover:bg-[#8B0000] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
@@ -977,6 +1020,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                           <button
                             onClick={() => {
                               setActiveMedia(m);
+                              setYoutubeUrlInput(m.youtubeId ? `https://www.youtube.com/watch?v=${m.youtubeId}` : '');
+                              setYtFetchError(null);
                               setMediaModalMode('edit');
                             }}
                             className="px-2.5 py-1 bg-white hover:bg-[#FAFAFA] text-[#171717] rounded-lg border border-[#E5E5E5] text-xs font-bold cursor-pointer"
@@ -1226,32 +1271,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
               </div>
             )}
 
-            {/* ================= TAB 7: STUDY RESOURCES & PAST QUESTIONS ================= */}
+            {/* ================= TAB 7: CONSTITUTION & STUDY MANUALS ================= */}
             {currentTab === 'resources' && (
               <div className="bg-white p-6 rounded-2xl border border-[#E5E5E5] shadow-xs space-y-5">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div>
                     <h2 className="text-lg font-bold font-heading text-[#171717]">
-                      Study Resources & Past Questions ({resources.length})
+                      Official Documents & Manuals ({resources.length})
                     </h2>
                     <p className="text-xs text-[#666666]">
-                      Academic past question repository and spiritual handbook library.
+                      Constitution repository, registration guidelines, and teaching weekend study manuals.
                     </p>
                   </div>
 
                   <button
                     onClick={() => {
                       setActiveResource({
-                        category: 'Study Materials',
-                        fileType: 'PDF',
-                        level: '100L'
+                        category: 'Constitutional',
+                        fileType: 'PDF'
                       });
                       setResourceModalMode('create');
                     }}
                     className="px-4 py-2.5 bg-[#B5121B] hover:bg-[#8B0000] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Upload Past Question / Material</span>
+                    <span>Upload Document / Manual</span>
                   </button>
                 </div>
 
@@ -1434,7 +1478,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                   <div className="space-y-1 text-xs">
                     <span className="font-bold text-[#171717] block">Campus Fellowship Public Access Architecture</span>
                     <p className="text-[#666666] leading-relaxed">
-                      FUTA students and campus fellowship members do <strong>not</strong> need to create accounts or log in. All sermons, study materials, past questions, announcements, fellowship details, and giving channels are open to the public without barriers. Only verified administrators added below can access this management console.
+                      FUTA students and campus fellowship members do <strong>not</strong> need to create accounts or log in. All sermons, study manuals, constitution documents, announcements, fellowship details, and giving channels are open to the public without barriers. Only verified administrators added below can access this management console.
                     </p>
                   </div>
                 </div>
@@ -1915,7 +1959,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                     className="w-full px-3 py-2 bg-[#FAFAFA] border border-[#E5E5E5] rounded-xl text-xs text-[#171717]"
                   >
                     <option value="Official Notice">Official Notice</option>
-                    <option value="Academic">Academic</option>
+                    <option value="Secretariat">Secretariat</option>
                     <option value="Welfare">Welfare</option>
                     <option value="Spiritual">Spiritual</option>
                     <option value="Event Alert">Event Alert</option>
@@ -1990,13 +2034,77 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
               </button>
             </div>
 
-            <form onSubmit={handleSaveMedia} className="space-y-3">
+            <form onSubmit={handleSaveMedia} className="space-y-4">
+              
+              {/* YouTube Smart Auto-Fetcher Card */}
+              <div className="p-3.5 bg-[#FDECEC]/40 border border-[#F8D0D0] rounded-2xl space-y-2.5 text-left">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-[#8B0000]">
+                    <Tv className="w-3.5 h-3.5 text-[#B5121B]" />
+                    <span>Quick YouTube Import</span>
+                  </div>
+                  <span className="text-[10px] text-[#666666]">Auto-extracts thumbnail, title & metadata</span>
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Paste YouTube Link (e.g. https://www.youtube.com/watch?v=... or https://youtu.be/...)"
+                    value={youtubeUrlInput}
+                    onChange={(e) => {
+                      setYoutubeUrlInput(e.target.value);
+                      setYtFetchError(null);
+                    }}
+                    className="flex-1 px-3 py-2 bg-white border border-[#E5E5E5] rounded-xl text-xs text-[#171717] focus:outline-none focus:border-[#B5121B]"
+                  />
+                  <button
+                    type="button"
+                    disabled={isFetchingYouTube || !youtubeUrlInput.trim()}
+                    onClick={() => handleAutoFetchYouTube(youtubeUrlInput)}
+                    className="px-3.5 py-2 bg-[#B5121B] hover:bg-[#8B0000] disabled:bg-neutral-300 text-white rounded-xl text-xs font-bold transition-colors shrink-0 cursor-pointer flex items-center gap-1.5"
+                  >
+                    {isFetchingYouTube ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Fetching...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Auto-Fill</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {ytFetchError && (
+                  <p className="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200">
+                    {ytFetchError}
+                  </p>
+                )}
+
+                {activeMedia.thumbnail && (
+                  <div className="flex items-center gap-3 pt-1">
+                    <img 
+                      src={activeMedia.thumbnail} 
+                      alt="Thumbnail Preview" 
+                      className="w-16 h-10 object-cover rounded-lg border border-[#E5E5E5]"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="text-[11px] text-[#666666] leading-tight">
+                      <span className="font-bold text-[#171717] block">Video ID: {activeMedia.youtubeId || 'Extracted'}</span>
+                      <span className="text-emerald-700 font-semibold">Ready to save or refine below</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="text-xs font-bold text-[#171717] block mb-1">Sermon / Video Title:</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Walking in Academic Dominion"
+                  placeholder="e.g. Walking in the Fullness of Christ"
                   value={activeMedia.title || ''}
                   onChange={(e) => setActiveMedia({ ...activeMedia, title: e.target.value })}
                   className="w-full px-3 py-2 bg-[#FAFAFA] border border-[#E5E5E5] rounded-xl text-xs text-[#171717]"
@@ -2147,7 +2255,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                     className="w-full px-3 py-2 bg-[#FAFAFA] border border-[#E5E5E5] rounded-xl text-xs text-[#171717]"
                   >
                     <option value="Mega Service">Mega Service</option>
-                    <option value="Academic">Academic</option>
+                    <option value="Teaching Weekend">Teaching Weekend</option>
                     <option value="Prayer">Prayer</option>
                     <option value="Conference">Conference</option>
                     <option value="Special">Special</option>
@@ -2311,6 +2419,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                 />
               </div>
 
+              <div>
+                <label className="text-xs font-bold text-[#171717] block mb-1">Google Maps Location URL:</label>
+                <input
+                  type="url"
+                  placeholder="e.g. https://maps.google.com/?q=... or Google Maps Share Link"
+                  value={activeFellowship.mapUrl || ''}
+                  onChange={(e) => setActiveFellowship({ ...activeFellowship, mapUrl: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#FAFAFA] border border-[#E5E5E5] rounded-xl text-xs text-[#171717]"
+                />
+                <p className="text-[11px] text-[#666666] mt-1">
+                  Enables students and worshippers to navigate directly to this fellowship location on campus via Google Maps.
+                </p>
+              </div>
+
               <button
                 type="submit"
                 className="w-full py-3 bg-[#B5121B] hover:bg-[#8B0000] text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer mt-2"
@@ -2410,7 +2532,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E5E5] space-y-4 text-left">
             <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3">
               <h3 className="text-base font-bold font-heading text-[#171717]">
-                {resourceModalMode === 'edit' ? 'Edit Study Material' : 'Upload Past Question / Material'}
+                {resourceModalMode === 'edit' ? 'Edit Publication / Document' : 'Upload Document / Manual'}
               </h3>
               <button onClick={() => setResourceModalMode(null)} className="w-8 h-8 rounded-full bg-[#FAFAFA] flex items-center justify-center cursor-pointer">
                 <X className="w-4 h-4" />
@@ -2419,11 +2541,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
 
             <form onSubmit={handleSaveResource} className="space-y-3">
               <div>
-                <label className="text-xs font-bold text-[#171717] block mb-1">Resource Title & Course Code:</label>
+                <label className="text-xs font-bold text-[#171717] block mb-1">Document / Manual Title:</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. MEE 201 Applied Mechanics Solved Past Questions (2018-2025)"
+                  placeholder="e.g. Official JCCF Constitution & Bye-Laws (2024 Review)"
                   value={activeResource.title || ''}
                   onChange={(e) => setActiveResource({ ...activeResource, title: e.target.value })}
                   className="w-full px-3 py-2 bg-[#FAFAFA] border border-[#E5E5E5] rounded-xl text-xs text-[#171717]"
@@ -2434,14 +2556,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                 <div>
                   <label className="text-xs font-bold text-[#171717] block mb-1">Category:</label>
                   <select
-                    value={activeResource.category || 'Study Materials'}
+                    value={activeResource.category || 'Constitutional'}
                     onChange={(e) => setActiveResource({ ...activeResource, category: e.target.value as any })}
                     className="w-full px-3 py-2 bg-[#FAFAFA] border border-[#E5E5E5] rounded-xl text-xs text-[#171717]"
                   >
-                    <option value="Study Materials">Study Materials</option>
+                    <option value="Constitutional">Constitutional</option>
+                    <option value="Manuals">Manuals</option>
                     <option value="Sermons">Sermons</option>
                     <option value="Documents">Documents</option>
-                    <option value="Publications">Publications</option>
+                    <option value="Bulletins">Bulletins</option>
                   </select>
                 </div>
 

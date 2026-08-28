@@ -41,7 +41,7 @@ export const ContactPage: React.FC = () => {
             Contact <span className="text-[#B5121B]">JCCF FUTA</span>
           </h1>
           <p className="text-sm sm:text-base text-[#666666] max-w-2xl mx-auto leading-relaxed">
-            Have questions regarding fellowship registration, welfare relief, academic coaching, or Mega Praise? Reach out to our executive secretariat.
+            Have questions regarding fellowship registration, welfare relief, joint programmes, or Mega Praise? Reach out to our executive secretariat.
           </p>
         </div>
       </div>
@@ -191,7 +191,7 @@ export const ContactPage: React.FC = () => {
                       <option value="">Select subject...</option>
                       <option value="General Inquiry">General Inquiry</option>
                       <option value="Student Welfare / Food Assistance">Student Welfare / Food Assistance</option>
-                      <option value="Academic Tutorial Coaching">Academic Tutorial Coaching</option>
+                      <option value="Secretariat & Constitution Documents">Secretariat & Constitution Documents</option>
                       <option value="Fellowship Verification">Fellowship Verification</option>
                       <option value="Mega Praise 2026 Participation">Mega Praise 2026 Participation</option>
                     </select>

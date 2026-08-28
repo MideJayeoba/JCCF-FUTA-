@@ -17,7 +17,7 @@ export const announcements = pgTable('announcements', {
   id: serial('id').primaryKey(),
   title: text('title').notNull(),
   content: text('content').notNull(),
-  category: text('category').notNull(), // 'General' | 'Academic' | 'Mega Praise' | 'Emergency' | 'Spiritual'
+  category: text('category').notNull(), // 'General' | 'Secretariat' | 'Mega Praise' | 'Emergency' | 'Spiritual'
   date: text('date').notNull(),
   author: text('author').notNull(),
   pinned: boolean('pinned').default(false),
@@ -50,6 +50,7 @@ export const fellowships = pgTable('fellowships', {
   presidentPhone: text('president_phone').notNull(),
   description: text('description').notNull(),
   logoUrl: text('logo_url'),
+  mapUrl: text('map_url'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -69,11 +70,11 @@ export const executives = pgTable('executives', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
-// Academic Past Questions, Sermons & Resources
+// Constitution, Study Manuals & Documents
 export const resources = pgTable('resources', {
   id: serial('id').primaryKey(),
   title: text('title').notNull(),
-  category: text('category').notNull(), // 'Study Materials' | 'Sermons' | 'Documents' | 'Publications'
+  category: text('category').notNull(), // 'Constitutional' | 'Manuals' | 'Sermons' | 'Documents' | 'Bulletins'
   courseCode: text('course_code'),
   department: text('department'),
   format: text('format').notNull(),
@@ -82,6 +83,37 @@ export const resources = pgTable('resources', {
   downloadsCount: integer('downloads_count').default(0),
   description: text('description').notNull(),
   uploadedBy: text('uploaded_by').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Past Executive Administrations & Generational History
+export const historicalExecutives = pgTable('historical_executives', {
+  id: serial('id').primaryKey(),
+  tenure: text('tenure').notNull(), // e.g. "2024/2025" or "1999/2000"
+  generationName: text('generation_name').notNull(), // e.g. "The Trailblazers"
+  theme: text('theme'), // e.g. "Generation of Glory"
+  president: text('president').notNull(),
+  executivesList: text('executives_list'), // summary of other executives
+  mission: text('mission'),
+  vision: text('vision'),
+  keyAchievements: text('key_achievements'), // JSON string array of achievements
+  photoUrl: text('photo_url'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Digital Media Broadcasts & Sermons
+export const media = pgTable('media', {
+  id: serial('id').primaryKey(),
+  title: text('title').notNull(),
+  category: text('category').notNull(), // 'Sermon' | 'Mega Praise' | 'Worship' | 'Seminar' | 'Podcast'
+  duration: text('duration').notNull(),
+  date: text('date').notNull(),
+  minister: text('minister').notNull(),
+  thumbnail: text('thumbnail').notNull(),
+  youtubeId: text('youtube_id').notNull(),
+  description: text('description').notNull(),
+  views: text('views'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 

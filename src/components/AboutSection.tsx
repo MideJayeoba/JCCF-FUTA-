@@ -24,10 +24,10 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ onLearnMore }) => {
               
               <div className="absolute bottom-4 left-4 right-4 text-white">
                 <span className="text-[10px] font-black uppercase tracking-wider text-white bg-[#B5121B] px-2 py-0.5 rounded">
-                  Since 1982
+                  Since 1996/97
                 </span>
                 <p className="text-xs sm:text-sm font-semibold mt-1 drop-shadow-sm">
-                  Over 40 Years of Unbroken Campus Inter-Denominational Fellowship & Revival at FUTA
+                  Unbroken Campus Inter-Denominational Fellowship & Revival at FUTA
                 </p>
               </div>
             </div>
@@ -38,8 +38,8 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ onLearnMore }) => {
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div className="text-left">
-                <span className="text-xs font-bold text-[#171717] block">Apex Student Body</span>
-                <span className="text-[11px] text-[#666666]">Officially Recognized by FUTA University Management</span>
+                <span className="text-xs font-bold text-[#171717] block">25 Member Fellowships</span>
+                <span className="text-[11px] text-[#666666]">Formally Registered Under FUTA Management</span>
               </div>
             </div>
           </div>
@@ -48,21 +48,20 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ onLearnMore }) => {
           <div className="lg:col-span-6 space-y-6 text-left">
             
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FDECEC] text-[#8B0000] text-xs font-bold uppercase tracking-wider border border-[#F8D0D0]">
-              <span>About JCCF FUTA</span>
+              <span>About JCCF FUTA (The Household)</span>
             </div>
 
             <h2 className="text-3xl sm:text-4xl font-extrabold text-[#171717] tracking-tight font-heading leading-tight">
-              One Fellowship. <br />
-              <span className="text-[#B5121B]">Many Fellowships.</span> <br />
-              One Purpose.
+              Till We All Come In The <br />
+              <span className="text-[#B5121B]">Unity of Faith</span>
             </h2>
 
             <p className="text-sm sm:text-base text-[#666666] leading-relaxed">
-              The Joint Christian Campus Fellowship (JCCF) FUTA is the apex coordinating body for all Christian fellowship organizations within the Federal University of Technology Akure.
+              The Joint Christian Campus Fellowship (JCCF) FUTA is the apex non-denominational body representing Protestant Christian fellowships across the Federal University of Technology, Akure.
             </p>
 
             <p className="text-sm sm:text-base text-[#666666] leading-relaxed">
-              We stand as a unifying umbrella uniting Pentecostal, Evangelical, and Denominational student bodies to foster profound spiritual revival, uncompromising moral integrity, academic brilliance, and holistic student support.
+              Founded on the scriptural mandate of Ephesians 4:13, our emphasis is not merely the conglomeration of campus fellowships, but the oneness of purpose pressing towards the mark of growing into the measure of the stature of the fullness of Christ.
             </p>
 
             {/* Quick Feature Checklist in Red/White */}
@@ -73,15 +72,15 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ onLearnMore }) => {
               </div>
               <div className="flex items-center gap-2 text-xs font-semibold text-[#171717]">
                 <CheckCircle2 className="w-4 h-4 text-[#B5121B] shrink-0" />
-                <span>Free Faculty Academic Tutorials</span>
+                <span>Combined Resumption Prayers & Vigils</span>
               </div>
               <div className="flex items-center gap-2 text-xs font-semibold text-[#171717]">
                 <CheckCircle2 className="w-4 h-4 text-[#B5121B] shrink-0" />
-                <span>Indigent Student Food & Welfare Aid</span>
+                <span>Sessional Change of Pulpit</span>
               </div>
               <div className="flex items-center gap-2 text-xs font-semibold text-[#171717]">
                 <CheckCircle2 className="w-4 h-4 text-[#B5121B] shrink-0" />
-                <span>Annual Campus Mega Praise</span>
+                <span>25 Registered Constituent Fellowships</span>
               </div>
             </div>
 

@@ -47,7 +47,7 @@ export const GetInvolvedSection: React.FC<GetInvolvedSectionProps> = ({
     {
       id: 'attend',
       title: 'Attend an Event',
-      description: 'Join thousands of students at our upcoming Mega Praise, prayer walks, and academic summits.',
+      description: 'Join thousands of students at our upcoming Mega Praise, prayer walks, and Teaching Weekend.',
       icon: Calendar,
       actionText: 'View Upcoming Events',
       onClick: () => onNavigate('events'),
@@ -56,16 +56,16 @@ export const GetInvolvedSection: React.FC<GetInvolvedSectionProps> = ({
     {
       id: 'volunteer',
       title: 'Volunteer in a Unit',
-      description: 'Deploy your gifts in the Central Mass Choir, Media crew, Academic coaching, or Prayer force.',
+      description: 'Deploy your gifts in the Central Mass Choir, Drama troupe, Media crew, Ushering, or Prayer team.',
       icon: HandHeart,
-      actionText: 'Explore 8 Ministry Units',
+      actionText: 'Explore Service Units',
       onClick: () => onNavigate('get-involved'),
       badge: 'Kingdom Service'
     },
     {
       id: 'partner',
       title: 'Partner With Us',
-      description: 'Support student welfare food bank, free academic handouts, and campus evangelism.',
+      description: 'Support student welfare relief, campus evangelism tracts, and fellowship operations.',
       icon: Building2,
       actionText: 'Partner & Give',
       onClick: onOpenGiveModal,

@@ -16,7 +16,7 @@ export const AnnouncementsPage: React.FC = () => {
             Campus Notices & <span className="text-[#B5121B]">Announcements</span>
           </h1>
           <p className="text-sm sm:text-base text-[#666666] max-w-2xl mx-auto leading-relaxed">
-            Verified circulars from the JCCF Central Executive Council, academic tutorial schedules, and welfare updates.
+            Verified information from JCCF body.
           </p>
         </div>
       </div>

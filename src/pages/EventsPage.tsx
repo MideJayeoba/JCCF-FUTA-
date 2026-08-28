@@ -17,7 +17,7 @@ export const EventsPage: React.FC = () => {
             Events & <span className="text-[#B5121B]">Weekly Schedule</span>
           </h1>
           <p className="text-sm sm:text-base text-[#666666] max-w-2xl mx-auto leading-relaxed">
-            Never miss a joint service, Mega Praise night, prayer walk, or academic coaching seminar at FUTA.
+            Never miss a joint service, Mega Praise night, prayer walk, or Teaching Weekend at FUTA.
           </p>
         </div>
       </div>

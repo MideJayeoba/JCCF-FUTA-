@@ -115,7 +115,7 @@ export const GivePage: React.FC<GivePageProps> = ({ onOpenGiveModal }) => {
             Partner with the Move of God in <span className="text-white">FUTA</span>
           </h1>
           <p className="text-sm sm:text-base text-white/90 max-w-2xl mx-auto leading-relaxed">
-            Your financial seed directly supports indigent student food vouchers, campus evangelism treks, tutorial halls, and Mega Praise logistics.
+            Your financial seed directly supports indigent student food vouchers, campus evangelism treks, joint assemblies, and Mega Praise logistics.
           </p>
 
           <div className="pt-2 flex justify-center">
@@ -380,7 +380,7 @@ export const GivePage: React.FC<GivePageProps> = ({ onOpenGiveModal }) => {
                       <option value="Mega Praise 2026 Logistics & Sound">Mega Praise 2026 Logistics & Sound</option>
                       <option value="General Fellowship Stewardship & Tithes">General Fellowship Stewardship & Tithes</option>
                       <option value="Campus Evangelism & Rural Missions">Campus Evangelism & Rural Missions</option>
-                      <option value="Academic Tutorial Materials Sponsorship">Academic Tutorial Materials Sponsorship</option>
+                      <option value="JCCF Secretariat & Publications Sponsorship">JCCF Secretariat & Publications Sponsorship</option>
                     </select>
                   </div>
 

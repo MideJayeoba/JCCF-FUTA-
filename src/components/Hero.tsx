@@ -54,7 +54,7 @@ export const Hero: React.FC<HeroProps> = ({
 
             {/* Supporting Text */}
             <p className="text-base sm:text-lg text-[#666666] max-w-2xl leading-relaxed font-normal">
-              Welcome to JCCF FUTA — coordinating, empowering, and uniting Christian fellowships, students, and leaders across the Federal University of Technology Akure for spiritual depth, academic dominion, and kingdom impact.
+              Welcome to JCCF FUTA — coordinating, empowering, and uniting Christian fellowships, students, and leaders across the Federal University of Technology Akure for spiritual depth, covenant unity, and kingdom impact.
             </p>
 
             {/* CTAs in Red & White System */}

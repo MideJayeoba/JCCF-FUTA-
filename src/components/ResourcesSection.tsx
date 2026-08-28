@@ -6,11 +6,10 @@ import {
   Download, 
   BookOpen, 
   Headphones, 
-  FileCode, 
   ArrowRight, 
   Search, 
-  CheckCircle,
-  FolderArchive
+  FolderArchive,
+  ShieldCheck
 } from 'lucide-react';
 
 interface ResourcesSectionProps {
@@ -27,7 +26,7 @@ export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  const categories = ['All', 'Study Materials', 'Sermons', 'Documents', 'Publications'];
+  const categories = ['All', 'Constitutional', 'Manuals', 'Sermons', 'Documents', 'Bulletins'];
 
   const filteredResources = resources.filter((res) => {
     const matchesCategory = selectedCategory === 'All' || res.category === selectedCategory;
@@ -49,15 +48,16 @@ export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'Study Materials':
+      case 'Constitutional':
+        return <ShieldCheck className="w-5 h-5" />;
+      case 'Manuals':
         return <BookOpen className="w-5 h-5" />;
       case 'Sermons':
         return <Headphones className="w-5 h-5" />;
       case 'Documents':
-        return <FileText className="w-5 h-5" />;
-      case 'Publications':
+      case 'Bulletins':
       default:
-        return <FolderArchive className="w-5 h-5" />;
+        return <FileText className="w-5 h-5" />;
     }
   };
 
@@ -69,13 +69,13 @@ export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
         <div className="text-center max-w-3xl mx-auto mb-12">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FDECEC] text-[#8B0000] text-xs font-bold uppercase tracking-wider mb-3 border border-[#F8D0D0]">
             <BookOpen className="w-3.5 h-3.5 text-[#B5121B]" />
-            <span>Digital Library & Past Questions</span>
+            <span>Digital Vault & Constitution</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-[#171717] font-heading tracking-tight">
-            Resources & Study Materials
+            Official Documents & Publications
           </h2>
           <p className="text-[#666666] mt-3 text-sm sm:text-base leading-relaxed">
-            Free access to solved 100L–500L engineering & science past questions, spiritual manuals, the JCCF Constitution, and devotionals.
+            Free access to the reviewed JCCF Constitution, fellowship registration guidelines, teaching weekend study manuals, and scripture companions.
           </p>
         </div>
 
@@ -87,7 +87,7 @@ export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
                 <Search className="w-4 h-4 text-[#666666] absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Search resources, past questions, manuals..."
+                  placeholder="Search constitution, study manuals, guidelines..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 bg-[#FAFAFA] border border-[#E5E5E5] rounded-xl text-xs sm:text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#B5121B]"
@@ -126,11 +126,6 @@ export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
                     {getCategoryIcon(item.category)}
                   </div>
                   <div className="flex items-center gap-2">
-                    {item.level && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-white text-[#171717] px-2 py-0.5 rounded border border-[#E5E5E5]">
-                        {item.level}
-                      </span>
-                    )}
                     <span className="text-[10px] font-black uppercase tracking-wider bg-[#FDECEC] text-[#8B0000] px-2 py-0.5 rounded border border-[#F8D0D0]">
                       {item.fileType} • {item.fileSize}
                     </span>
@@ -171,7 +166,7 @@ export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
               onClick={onViewAllResources}
               className="px-8 py-3.5 bg-[#B5121B] hover:bg-[#8B0000] text-white font-bold text-sm rounded-xl shadow-xs hover:shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
             >
-              <span>Explore All Study Materials & Past Questions</span>
+              <span>Explore All Documents & Manuals</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

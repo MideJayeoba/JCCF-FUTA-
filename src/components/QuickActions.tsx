@@ -18,12 +18,12 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       description: 'Discover your Christian denomination and weekly meeting location in FUTA.',
       icon: Users,
       action: () => onNavigate('fellowships'),
-      badge: '15+ Fellowships'
+      badge: '25 Fellowships'
     },
     {
       id: 'events',
       title: 'Upcoming Events',
-      description: 'Mega Praise, prayer vigils, academic seminars, and conference timetables.',
+      description: 'Mega Praise, prayer vigils, teaching weekends, and conference timetables.',
       icon: Calendar,
       action: () => onNavigate('events'),
       badge: 'Next Service'

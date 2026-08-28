@@ -27,6 +27,7 @@ export interface Fellowship {
   description: string;
   establishedYear: string;
   futaLocation: string;
+  mapUrl?: string;
   socialLink?: string;
   membershipSize?: string;
 }
@@ -40,16 +41,16 @@ export interface ServiceUnit {
   headTitle: string;
   description: string;
   duties: string[];
-  meetingTime: string;
-  venue: string;
-  skillsNeeded: string[];
+  meetingTime?: string;
+  venue?: string;
+  skillsNeeded?: string[];
 }
 
 export interface FellowshipEvent {
   id: string;
   title: string;
   theme?: string;
-  category: 'Mega Service' | 'Conference' | 'Academic' | 'Prayer' | 'Outreach' | 'Special';
+  category: 'Mega Service' | 'Conference' | 'Teaching Weekend' | 'Prayer' | 'Outreach' | 'Special';
   date: string;
   time: string;
   venue: string;
@@ -65,7 +66,7 @@ export interface FellowshipEvent {
 export interface Announcement {
   id: string;
   title: string;
-  category: 'Official Notice' | 'Academic' | 'Spiritual' | 'Welfare' | 'Event Alert';
+  category: 'Official Notice' | 'Spiritual' | 'Welfare' | 'Event Alert' | 'Secretariat';
   date: string;
   author: string;
   summary: string;
@@ -92,7 +93,7 @@ export interface MediaItem {
 export interface ResourceItem {
   id: string;
   title: string;
-  category: 'Study Materials' | 'Sermons' | 'Documents' | 'Publications';
+  category: 'Constitutional' | 'Manuals' | 'Sermons' | 'Documents' | 'Bulletins';
   fileType: 'PDF' | 'DOCX' | 'MP3' | 'ZIP';
   fileSize: string;
   downloadCount: number;
@@ -116,10 +117,17 @@ export interface ExecutiveLeader {
 }
 
 export interface HistoricalExecutive {
-  tenure: string;
-  president: string;
-  theme: string;
-  keyAchievements: string[];
+  id?: string;
+  tenure: string; // Generation / Year of serving e.g. '2024/2025'
+  generationName: string; // Generational Name e.g. 'The Trailblazers'
+  theme?: string; // Generational Theme / Slogan
+  president: string; // President
+  executivesList?: string; // Other executive members
+  mission?: string; // Generational Mission
+  vision?: string; // Generational Vision
+  keyAchievements: string[]; // Key milestones & achievements
+  photoUrl?: string; // Portrait or executive photo
+  secretary?: string;
 }
 
 export interface TimelineMilestone {
@@ -167,6 +175,8 @@ export interface SystemSettings {
   opayMerchantName: string;
   palmpayMerchantAccount: string;
   palmpayMerchantName: string;
+  youtubeChannelHandle?: string;
+  youtubeChannelName?: string;
 }
 
 export interface AuditLog {

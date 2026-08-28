@@ -146,7 +146,7 @@ export const GivingModal: React.FC<GivingModalProps> = ({ isOpen, onClose }) => 
                   Thank You for Your Seed!
                 </h3>
                 <p className="text-xs text-[#666666] mt-1 max-w-md mx-auto">
-                  Your seed has been recorded into the JCCF Central Stewardship Ledger. The Lord bless your academics and endeavors!
+                  Your seed has been recorded into the JCCF Central Stewardship Ledger. The Lord bless your life and spiritual walk!
                 </p>
               </div>
 
@@ -305,7 +305,7 @@ export const GivingModal: React.FC<GivingModalProps> = ({ isOpen, onClose }) => 
                   <option value="Student Welfare Food Bank & Indigent Care">Student Welfare Food Bank & Indigent Care</option>
                   <option value="Mega Praise 2026 Logistics & Sound">Mega Praise 2026 Logistics & Sound</option>
                   <option value="Campus Evangelism & Rural Missions">Campus Evangelism & Rural Missions</option>
-                  <option value="Academic Excellence & Tutorials Sponsorship">Academic Excellence & Tutorials Sponsorship</option>
+                  <option value="JCCF Secretariat & Publications Sponsorship">JCCF Secretariat & Publications Sponsorship</option>
                   <option value="General Fellowship Stewardship & Tithes">General Fellowship Stewardship & Tithes</option>
                 </select>
               </div>

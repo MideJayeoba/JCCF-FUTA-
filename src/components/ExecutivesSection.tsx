@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { HISTORICAL_EXECUTIVES } from '../data/executives';
 import { ExecutiveLeader } from '../types';
 import { 
   Users, 
@@ -11,7 +10,9 @@ import {
   GraduationCap,
   Sparkles,
   Search,
-  BookOpen
+  BookOpen,
+  History,
+  ShieldCheck
 } from 'lucide-react';
 
 interface ExecutivesSectionProps {
@@ -23,7 +24,7 @@ export const ExecutivesSection: React.FC<ExecutivesSectionProps> = ({
   onViewAllExecutives,
   showAll = false
 }) => {
-  const { executives } = useApp();
+  const { executives, historicalExecutives } = useApp();
   const [activeTab, setActiveTab] = useState<'current' | 'historical'>('current');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -49,7 +50,7 @@ export const ExecutivesSection: React.FC<ExecutivesSectionProps> = ({
             Meet the Executive Council
           </h2>
           <p className="text-[#666666] mt-3 text-sm sm:text-base leading-relaxed">
-            Dedicated student servant leaders steering the spiritual, academic, and administrative affairs of JCCF FUTA for the 2026/2027 session.
+            Dedicated student servant leaders steering the spiritual, ministerial, and administrative affairs of JCCF FUTA for the 2026/2027 session.
           </p>
         </div>
 
@@ -65,7 +66,7 @@ export const ExecutivesSection: React.FC<ExecutivesSectionProps> = ({
                     : 'text-[#666666] hover:text-[#171717]'
                 }`}
               >
-                Current CEC (2026/2027)
+                Current CEC ({executives.length})
               </button>
               <button
                 onClick={() => setActiveTab('historical')}
@@ -75,7 +76,7 @@ export const ExecutivesSection: React.FC<ExecutivesSectionProps> = ({
                     : 'text-[#666666] hover:text-[#171717]'
                 }`}
               >
-                Historical Presidents & Archives
+                Past Presidents & Historical CEC ({historicalExecutives.length})
               </button>
             </div>
           </div>
@@ -83,77 +84,89 @@ export const ExecutivesSection: React.FC<ExecutivesSectionProps> = ({
 
         {/* Current CEC Grid */}
         {(!showAll || activeTab === 'current') && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {displayedExecutives.map((exec) => (
-              <div
-                key={exec.id}
-                className="bg-white rounded-2xl border border-[#E5E5E5] hover:border-[#B5121B] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
-              >
-                <div>
-                  {/* Portrait Image */}
-                  <div className="h-64 relative overflow-hidden bg-[#171717]">
-                    <img
-                      src={exec.photoUrl}
-                      alt={exec.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#171717]/90 via-[#171717]/20 to-transparent" />
-                    
-                    {/* Office Tag */}
-                    <div className="absolute bottom-3 left-3 right-3">
-                      <span className="text-[10px] font-black uppercase tracking-wider bg-[#B5121B] text-white px-2 py-0.5 rounded shadow-xs inline-block mb-1">
-                        {exec.office}
-                      </span>
-                      <h3 className="text-base font-bold font-heading text-white line-clamp-1">
-                        {exec.name}
-                      </h3>
-                    </div>
-                  </div>
-
-                  {/* Body details */}
-                  <div className="p-4 space-y-2.5 text-left">
-                    <div className="flex items-center gap-1.5 text-xs text-[#666666]">
-                      <GraduationCap className="w-3.5 h-3.5 text-[#B5121B] shrink-0" />
-                      <span className="font-semibold text-[#171717]">{exec.level} • {exec.department}</span>
-                    </div>
-
-                    <p className="text-xs text-[#666666] italic line-clamp-3 bg-[#FAFAFA] p-2.5 rounded-xl border border-[#E5E5E5]">
-                      “{exec.quote}”
-                    </p>
-                  </div>
-                </div>
-
-                {/* Footer contacts */}
-                <div className="p-4 pt-0 border-t border-[#E5E5E5] mt-2 flex items-center justify-between text-xs text-[#666666]">
-                  <a
-                    href={`mailto:${exec.email}`}
-                    className="hover:text-[#B5121B] flex items-center gap-1 font-medium transition-colors"
-                  >
-                    <Mail className="w-3 h-3 text-[#B5121B]" />
-                    <span>Email</span>
-                  </a>
-                  <a
-                    href={`tel:${exec.phone}`}
-                    className="hover:text-[#B5121B] flex items-center gap-1 font-medium transition-colors"
-                  >
-                    <Phone className="w-3 h-3 text-[#B5121B]" />
-                    <span>Contact</span>
-                  </a>
-                </div>
-
+          <div>
+            {displayedExecutives.length === 0 ? (
+              <div className="bg-white rounded-3xl border border-[#E5E5E5] p-12 text-center max-w-xl mx-auto shadow-xs">
+                <ShieldCheck className="w-12 h-12 text-[#B5121B] mx-auto mb-3" />
+                <h3 className="text-base font-bold text-[#171717]">No Executive Profiles Listed</h3>
+                <p className="text-xs text-[#666666] mt-1">Executive leadership for this session is being confirmed by the election and central committee.</p>
               </div>
-            ))}
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {displayedExecutives.map((exec) => (
+                  <div
+                    key={exec.id}
+                    className="bg-white rounded-2xl border border-[#E5E5E5] hover:border-[#B5121B] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+                  >
+                    <div>
+                      {/* Portrait Image */}
+                      <div className="h-64 relative overflow-hidden bg-[#171717]">
+                        <img
+                          src={exec.photoUrl}
+                          alt={exec.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#171717]/90 via-[#171717]/20 to-transparent" />
+                        
+                        {/* Office Tag */}
+                        <div className="absolute bottom-3 left-3 right-3">
+                          <span className="text-[10px] font-black uppercase tracking-wider bg-[#B5121B] text-white px-2 py-0.5 rounded shadow-xs inline-block mb-1">
+                            {exec.office}
+                          </span>
+                          <h3 className="text-base font-bold font-heading text-white line-clamp-1">
+                            {exec.name}
+                          </h3>
+                        </div>
+                      </div>
+
+                      {/* Body details */}
+                      <div className="p-4 space-y-2.5 text-left">
+                        <div className="flex items-center gap-1.5 text-xs text-[#666666]">
+                          <GraduationCap className="w-3.5 h-3.5 text-[#B5121B] shrink-0" />
+                          <span className="font-semibold text-[#171717]">{exec.level} • {exec.department}</span>
+                        </div>
+
+                        {exec.quote && (
+                          <p className="text-xs text-[#666666] italic line-clamp-3 bg-[#FAFAFA] p-2.5 rounded-xl border border-[#E5E5E5]">
+                            “{exec.quote}”
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Footer contacts */}
+                    <div className="p-4 pt-0 border-t border-[#E5E5E5] mt-2 flex items-center justify-between text-xs text-[#666666]">
+                      <a
+                        href={`mailto:${exec.email}`}
+                        className="hover:text-[#B5121B] flex items-center gap-1 font-medium transition-colors"
+                      >
+                        <Mail className="w-3 h-3 text-[#B5121B]" />
+                        <span>Email</span>
+                      </a>
+                      <a
+                        href={`tel:${exec.phone}`}
+                        className="hover:text-[#B5121B] flex items-center gap-1 font-medium transition-colors"
+                      >
+                        <Phone className="w-3 h-3 text-[#B5121B]" />
+                        <span>Contact</span>
+                      </a>
+                    </div>
+
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* Historical Archives Tab */}
         {showAll && activeTab === 'historical' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-            {HISTORICAL_EXECUTIVES.map((item, idx) => (
+            {historicalExecutives.map((item, idx) => (
               <div
-                key={idx}
-                className="bg-white p-6 rounded-2xl border border-[#E5E5E5] shadow-xs space-y-3"
+                key={item.id || idx}
+                className="bg-white p-6 rounded-2xl border border-[#E5E5E5] hover:border-[#B5121B] shadow-xs space-y-3 transition-all"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black uppercase tracking-wider bg-[#B5121B] text-white px-2.5 py-0.5 rounded">
@@ -164,18 +177,37 @@ export const ExecutivesSection: React.FC<ExecutivesSectionProps> = ({
                   </span>
                 </div>
 
-                <h4 className="text-base font-bold text-[#171717] font-heading">
-                  Led by: {item.president}
-                </h4>
-
-                <div className="space-y-1.5 pt-2 border-t border-[#E5E5E5]">
-                  <span className="text-xs font-bold text-[#666666] block">Key Milestones:</span>
-                  <ul className="space-y-1 text-xs text-[#171717] list-disc list-inside">
-                    {item.keyAchievements.map((ach, aIdx) => (
-                      <li key={aIdx} className="leading-relaxed">{ach}</li>
-                    ))}
-                  </ul>
+                <div className="flex items-center gap-3 pt-1">
+                  {item.photoUrl ? (
+                    <img
+                      src={item.photoUrl}
+                      alt={item.president}
+                      className="w-12 h-12 rounded-full object-cover border border-[#E5E5E5]"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-[#FDECEC] text-[#B5121B] flex items-center justify-center font-bold text-sm">
+                      {item.president.charAt(0)}
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="text-base font-bold text-[#171717] font-heading">
+                      {item.president}
+                    </h4>
+                    <p className="text-xs text-[#666666]">President • {item.tenure} Administration</p>
+                  </div>
                 </div>
+
+                {item.keyAchievements && item.keyAchievements.length > 0 && (
+                  <div className="space-y-1.5 pt-2 border-t border-[#E5E5E5]">
+                    <span className="text-xs font-bold text-[#666666] block">Key Milestones & Legacy:</span>
+                    <ul className="space-y-1 text-xs text-[#171717] list-disc list-inside">
+                      {item.keyAchievements.map((ach, aIdx) => (
+                        <li key={aIdx} className="leading-relaxed">{ach}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             ))}
           </div>

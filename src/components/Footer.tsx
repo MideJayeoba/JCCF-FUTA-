@@ -52,7 +52,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenGiveModal }) =
             </div>
 
             <p className="text-xs sm:text-sm text-white/80 leading-relaxed max-w-sm">
-              The apex coordinating Christian fellowship body at the Federal University of Technology Akure, committed to spiritual revival, student welfare, inter-fellowship unity, and academic dominance.
+              The apex coordinating Christian fellowship body at the Federal University of Technology Akure, committed to spiritual revival, student welfare, inter-fellowship unity, and kingdom impact.
             </p>
 
             <div className="pt-2 flex items-center gap-3">
@@ -92,7 +92,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenGiveModal }) =
               </li>
               <li>
                 <button onClick={() => handleNav('fellowships')} className="hover:text-white transition-colors cursor-pointer">
-                  Member Fellowships (15+)
+                  Member Fellowships (25)
                 </button>
               </li>
               <li>
@@ -111,7 +111,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenGiveModal }) =
           {/* Col 4: Resources & Media */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-white/90">
-              Spiritual & Academic
+              Spiritual & Secretariat
             </h4>
             <ul className="space-y-2 text-xs text-white/80">
               <li>
@@ -121,12 +121,12 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenGiveModal }) =
               </li>
               <li>
                 <button onClick={() => handleNav('resources')} className="hover:text-white transition-colors cursor-pointer">
-                  100L-500L Past Questions
+                  Study Manuals & Hymnals
                 </button>
               </li>
               <li>
                 <button onClick={() => handleNav('resources')} className="hover:text-white transition-colors cursor-pointer">
-                  JCCF Constitution
+                  JCCF Constitution (2024)
                 </button>
               </li>
               <li>
@@ -136,7 +136,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenGiveModal }) =
               </li>
               <li>
                 <button onClick={() => handleNav('get-involved')} className="hover:text-white transition-colors cursor-pointer">
-                  Volunteer in 8 Units
+                  Household Service Units (5)
                 </button>
               </li>
             </ul>

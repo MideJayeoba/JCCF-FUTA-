@@ -4,6 +4,7 @@ import {
   FellowshipEvent, 
   Fellowship, 
   ExecutiveLeader, 
+  HistoricalExecutive,
   ResourceItem, 
   MediaItem, 
   ServiceUnit, 
@@ -16,7 +17,7 @@ import {
 import { ANNOUNCEMENTS } from '../data/announcements';
 import { JCCF_EVENTS } from '../data/events';
 import { MEMBER_FELLOWSHIPS } from '../data/fellowships';
-import { CENTRAL_EXECUTIVES } from '../data/executives';
+import { CENTRAL_EXECUTIVES, HISTORICAL_EXECUTIVES } from '../data/executives';
 import { RESOURCES_LIST } from '../data/resources';
 import { MEDIA_RECORDS } from '../data/media';
 import { SERVICE_UNITS } from '../data/units';
@@ -38,8 +39,11 @@ interface AppContextType {
   updateAnnouncement: (id: string, item: Partial<Announcement>) => Promise<void>;
   deleteAnnouncement: (id: string) => Promise<void>;
 
-  // Media
+  // Media & YouTube Broadcasts
   mediaList: MediaItem[];
+  youtubeChannel: string;
+  isSyncingYouTube: boolean;
+  fetchYouTubeVideos: (channelQuery?: string) => Promise<{ success: boolean; count: number; message: string; videos: MediaItem[] }>;
   addMedia: (item: Omit<MediaItem, 'id'>) => MediaItem;
   updateMedia: (id: string, item: Partial<MediaItem>) => void;
   deleteMedia: (id: string) => void;
@@ -61,6 +65,12 @@ interface AppContextType {
   addExecutive: (item: Omit<ExecutiveLeader, 'id'>) => Promise<ExecutiveLeader>;
   updateExecutive: (id: string, item: Partial<ExecutiveLeader>) => Promise<void>;
   deleteExecutive: (id: string) => Promise<void>;
+
+  // Past / Historical Executives
+  historicalExecutives: HistoricalExecutive[];
+  addHistoricalExecutive: (item: HistoricalExecutive) => Promise<void>;
+  updateHistoricalExecutive: (tenureOrId: string, item: Partial<HistoricalExecutive>) => Promise<void>;
+  deleteHistoricalExecutive: (tenureOrId: string) => Promise<void>;
 
   // Resources
   resources: ResourceItem[];
@@ -190,17 +200,67 @@ const INITIAL_AUDIT_LOGS: AuditLog[] = [
   }
 ];
 
+// LocalStorage deleted records helper
+const getDeletedIds = (): Set<string> => {
+  try {
+    const raw = localStorage.getItem('jccf_deleted_ids');
+    if (raw) return new Set(JSON.parse(raw));
+  } catch (_) {}
+  return new Set();
+};
+
+const markIdDeleted = (id: string, altKey?: string) => {
+  try {
+    const deleted = getDeletedIds();
+    if (id) deleted.add(String(id));
+    if (altKey) deleted.add(String(altKey));
+    localStorage.setItem('jccf_deleted_ids', JSON.stringify(Array.from(deleted)));
+  } catch (_) {}
+};
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { idToken, currentUser, isSuperAdmin: isAuthSuperAdmin } = useAuth();
 
-  const [announcements, setAnnouncements] = useState<Announcement[]>(ANNOUNCEMENTS);
-  const [mediaList, setMediaList] = useState<MediaItem[]>(MEDIA_RECORDS);
-  const [events, setEvents] = useState<FellowshipEvent[]>(JCCF_EVENTS);
-  const [fellowships, setFellowships] = useState<Fellowship[]>(MEMBER_FELLOWSHIPS);
-  const [executives, setExecutives] = useState<ExecutiveLeader[]>(CENTRAL_EXECUTIVES);
-  const [resources, setResources] = useState<ResourceItem[]>(RESOURCES_LIST);
+  const [announcements, setAnnouncements] = useState<Announcement[]>(() => {
+    const deleted = getDeletedIds();
+    return ANNOUNCEMENTS.filter(a => !deleted.has(a.id) && !deleted.has(a.title));
+  });
+  const [mediaList, setMediaList] = useState<MediaItem[]>(() => {
+    const deleted = getDeletedIds();
+    return MEDIA_RECORDS.filter(m => !deleted.has(m.id) && !deleted.has(m.title));
+  });
+  const [events, setEvents] = useState<FellowshipEvent[]>(() => {
+    const deleted = getDeletedIds();
+    return JCCF_EVENTS.filter(e => !deleted.has(e.id) && !deleted.has(e.title));
+  });
+  const [fellowships, setFellowships] = useState<Fellowship[]>(() => {
+    const deleted = getDeletedIds();
+    return MEMBER_FELLOWSHIPS.filter(f => !deleted.has(f.id) && !deleted.has(f.name) && !deleted.has(f.acronym));
+  });
+  const [executives, setExecutives] = useState<ExecutiveLeader[]>(() => {
+    const deleted = getDeletedIds();
+    return CENTRAL_EXECUTIVES.filter(e => !deleted.has(e.id) && !deleted.has(e.name));
+  });
+  const [resources, setResources] = useState<ResourceItem[]>(() => {
+    const deleted = getDeletedIds();
+    return RESOURCES_LIST.filter(r => !deleted.has(r.id) && !deleted.has(r.title));
+  });
+  const [historicalExecutives, setHistoricalExecutives] = useState<HistoricalExecutive[]>(() => {
+    try {
+      const saved = localStorage.getItem('jccf_historical_executives');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (_) {}
+    return HISTORICAL_EXECUTIVES;
+  });
+  const [youtubeChannel, setYoutubeChannel] = useState<string>(() => {
+    return localStorage.getItem('jccf_youtube_channel') || '@jccffuta';
+  });
+  const [isSyncingYouTube, setIsSyncingYouTube] = useState<boolean>(false);
   const [serviceUnits] = useState<ServiceUnit[]>(SERVICE_UNITS);
   const [donations, setDonations] = useState<DonationRecord[]>(INITIAL_DONATIONS);
   const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
@@ -243,29 +303,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (idToken) {
       headers['Authorization'] = `Bearer ${idToken}`;
     }
+    const sessionActive = sessionStorage.getItem('jccf_superadmin_session') === 'active';
+    if (isSuperAdmin || pinAdminActive || sessionActive) {
+      headers['x-admin-pin'] = settings.superadminPin || '778899';
+      headers['x-admin-session'] = 'active';
+      if (currentUser?.email) {
+        headers['x-admin-email'] = currentUser.email;
+      } else if (superAdminUser?.email) {
+        headers['x-admin-email'] = superAdminUser.email;
+      } else {
+        headers['x-admin-email'] = settings.superadminEmail || 'jayeobapeace19459@gmail.com';
+      }
+    }
     return headers;
-  }, [idToken]);
+  }, [idToken, isSuperAdmin, pinAdminActive, settings.superadminPin, settings.superadminEmail, currentUser, superAdminUser]);
 
   // Fetch all from PostgreSQL backend API
   const fetchDbData = useCallback(async () => {
     setIsSyncing(true);
+    const deleted = getDeletedIds();
     try {
       // Announcements
       const resAnn = await fetch('/api/announcements');
       if (resAnn.ok) {
         const data = await resAnn.json();
         if (Array.isArray(data) && data.length > 0) {
-          const mapped: Announcement[] = data.map((d: any) => ({
-            id: String(d.id),
-            title: d.title,
-            content: d.content,
-            summary: d.content.slice(0, 140) + '...',
-            category: d.category || 'Official Notice',
-            date: d.date,
-            author: d.author,
-            isFeatured: Boolean(d.pinned),
-            badgeColor: d.category === 'Mega Praise' ? 'red' : 'neutral'
-          }));
+          const mapped: Announcement[] = data
+            .filter((d: any) => !deleted.has(String(d.id)) && !deleted.has(d.title))
+            .map((d: any) => ({
+              id: String(d.id),
+              title: d.title,
+              content: d.content,
+              summary: d.content.slice(0, 140) + '...',
+              category: d.category || 'Official Notice',
+              date: d.date,
+              author: d.author,
+              isFeatured: Boolean(d.pinned),
+              badgeColor: d.category === 'Mega Praise' ? 'red' : 'neutral'
+            }));
           setAnnouncements(mapped);
         }
       }
@@ -275,19 +350,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (resEv.ok) {
         const data = await resEv.json();
         if (Array.isArray(data) && data.length > 0) {
-          const mapped: FellowshipEvent[] = data.map((d: any) => ({
-            id: String(d.id),
-            title: d.title,
-            theme: d.theme,
-            category: d.category || 'Mega Service',
-            date: d.date,
-            time: d.time,
-            venue: d.venue,
-            description: d.description,
-            isUpcoming: true,
-            isFeatured: Boolean(d.featured),
-            image: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&fit=crop',
-          }));
+          const mapped: FellowshipEvent[] = data
+            .filter((d: any) => !deleted.has(String(d.id)) && !deleted.has(d.title))
+            .map((d: any) => ({
+              id: String(d.id),
+              title: d.title,
+              theme: d.theme,
+              category: d.category || 'Mega Service',
+              date: d.date,
+              time: d.time,
+              venue: d.venue,
+              description: d.description,
+              isUpcoming: true,
+              isFeatured: Boolean(d.featured),
+              image: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&fit=crop',
+            }));
           setEvents(mapped);
         }
       }
@@ -297,23 +374,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (resFel.ok) {
         const data = await resFel.json();
         if (Array.isArray(data) && data.length > 0) {
-          const mapped: Fellowship[] = data.map((d: any) => ({
-            id: String(d.id),
-            name: d.name,
-            acronym: d.acronym,
-            motto: 'Knowing Christ and Making Him Known',
-            category: d.category,
-            meetingVenue: d.venue,
-            meetingDays: d.meetingDays,
-            meetingTime: '5:30 PM',
-            presidentName: d.presidentName,
-            presidentContact: d.presidentPhone,
-            bannerImage: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=800&fit=crop',
-            description: d.description,
-            establishedYear: '1995',
-            futaLocation: d.venue,
-            membershipSize: '350+ Students'
-          }));
+          const mapped: Fellowship[] = data
+            .filter((d: any) => !deleted.has(String(d.id)) && !deleted.has(d.name) && !deleted.has(d.acronym))
+            .map((d: any) => ({
+              id: String(d.id),
+              name: d.name,
+              acronym: d.acronym,
+              motto: 'Knowing Christ and Making Him Known',
+              category: d.category,
+              meetingVenue: d.venue,
+              meetingDays: d.meetingDays,
+              meetingTime: '5:30 PM',
+              presidentName: d.presidentName,
+              presidentContact: d.presidentPhone,
+              bannerImage: d.logoUrl || 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=800&fit=crop',
+              description: d.description,
+              establishedYear: '1995',
+              futaLocation: d.venue,
+              mapUrl: d.mapUrl || d.map_url || (d.name ? `https://maps.google.com/?q=${encodeURIComponent(d.name + ' FUTA Akure')}` : undefined),
+              membershipSize: '350+ Students'
+            }));
           setFellowships(mapped);
         }
       }
@@ -323,18 +403,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (resExec.ok) {
         const data = await resExec.json();
         if (Array.isArray(data) && data.length > 0) {
-          const mapped: ExecutiveLeader[] = data.map((d: any) => ({
-            id: String(d.id),
-            name: d.name,
-            office: d.office,
-            department: d.department,
-            level: d.level,
-            phone: d.phone,
-            email: d.email,
-            photoUrl: d.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&fit=crop',
-            quote: d.bio || 'Leading with kingdom purpose and integrity in FUTA.',
-            tenure: d.session || '2025/2026'
-          }));
+          const mapped: ExecutiveLeader[] = data
+            .filter((d: any) => !deleted.has(String(d.id)) && !deleted.has(d.name))
+            .map((d: any) => ({
+              id: String(d.id),
+              name: d.name,
+              office: d.office,
+              department: d.department,
+              level: d.level,
+              phone: d.phone,
+              email: d.email,
+              photoUrl: d.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&fit=crop',
+              quote: d.bio || 'Leading with kingdom purpose and integrity in FUTA.',
+              tenure: d.session || '2025/2026'
+            }));
           setExecutives(mapped);
         }
       }
@@ -344,18 +426,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (resRes.ok) {
         const data = await resRes.json();
         if (Array.isArray(data) && data.length > 0) {
-          const mapped: ResourceItem[] = data.map((d: any) => ({
-            id: String(d.id),
-            title: d.title,
-            category: d.category || 'Study Materials',
-            fileType: d.format || 'PDF',
-            fileSize: d.fileSize || '2.0 MB',
-            downloadCount: d.downloadsCount || 0,
-            dateAdded: '2026',
-            description: d.description,
-            downloadUrl: d.downloadUrl,
-            level: d.courseCode || '100L'
-          }));
+          const mapped: ResourceItem[] = data
+            .filter((d: any) => !deleted.has(String(d.id)) && !deleted.has(d.title))
+            .map((d: any) => ({
+              id: String(d.id),
+              title: d.title,
+              category: d.category || 'Constitutional',
+              fileType: d.format || 'PDF',
+              fileSize: d.fileSize || '2.0 MB',
+              downloadCount: d.downloadsCount || 0,
+              dateAdded: '2026',
+              description: d.description,
+              downloadUrl: d.downloadUrl,
+              level: d.courseCode || 'All'
+            }));
           setResources(mapped);
         }
       }
@@ -575,6 +659,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteAnnouncement = async (id: string) => {
     const target = announcements.find(a => a.id === id);
+    markIdDeleted(id, target?.title);
     setAnnouncements(prev => prev.filter(a => a.id !== id));
     try {
       const headers = await getAuthHeaders();
@@ -585,7 +670,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addAuditLog('Deleted announcement', target?.title || id, 'delete');
   };
 
-  // --- MEDIA CRUD ---
+  // --- MEDIA & YOUTUBE BROADCASTS CRUD ---
+  const fetchYouTubeVideos = async (channelQuery?: string): Promise<{ success: boolean; count: number; message: string; videos: MediaItem[] }> => {
+    setIsSyncingYouTube(true);
+    const target = channelQuery || youtubeChannel || '@jccffuta';
+    try {
+      const res = await fetch(`/api/youtube/channel-videos?channel=${encodeURIComponent(target)}`);
+      if (res.ok) {
+        const data = await res.json();
+        const incomingVideos: MediaItem[] = data.videos || [];
+        if (incomingVideos.length > 0) {
+          setMediaList(incomingVideos);
+          setYoutubeChannel(data.channelHandle || target);
+          localStorage.setItem('jccf_youtube_channel', data.channelHandle || target);
+          addAuditLog(`Synced YouTube channel: ${data.channelName || target}`, `${incomingVideos.length} videos loaded`, 'update');
+          setIsSyncingYouTube(false);
+          return {
+            success: true,
+            count: incomingVideos.length,
+            message: `Successfully loaded ${incomingVideos.length} video broadcasts from ${data.channelName || target}`,
+            videos: incomingVideos
+          };
+        } else {
+          setIsSyncingYouTube(false);
+          return {
+            success: false,
+            count: 0,
+            message: data.message || `No videos found on channel ${target}. Please check the handle or name.`,
+            videos: []
+          };
+        }
+      }
+    } catch (err: any) {
+      console.warn('YouTube channel fetch failed:', err);
+    } finally {
+      setIsSyncingYouTube(false);
+    }
+    return {
+      success: false,
+      count: 0,
+      message: 'Could not connect to YouTube channel stream. Please verify your connection.',
+      videos: []
+    };
+  };
+
   const addMedia = (item: Omit<MediaItem, 'id'>): MediaItem => {
     const newRecord: MediaItem = { ...item, id: 'med-' + Date.now() };
     setMediaList(prev => [newRecord, ...prev]);
@@ -600,6 +728,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteMedia = (id: string) => {
     const target = mediaList.find(m => m.id === id);
+    markIdDeleted(id, target?.title);
     setMediaList(prev => prev.filter(m => m.id !== id));
     addAuditLog('Deleted media item', target?.title || id, 'delete');
   };
@@ -654,6 +783,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteEvent = async (id: string) => {
     const target = events.find(e => e.id === id);
+    markIdDeleted(id, target?.title);
     setEvents(prev => prev.filter(e => e.id !== id));
     try {
       const headers = await getAuthHeaders();
@@ -683,7 +813,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           presidentName: item.presidentName,
           presidentPhone: item.presidentContact,
           description: item.description,
-          logoUrl: item.bannerImage
+          logoUrl: item.bannerImage,
+          mapUrl: item.mapUrl || ''
         })
       });
       if (res.ok) {
@@ -714,7 +845,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           presidentName: updated.presidentName,
           presidentPhone: updated.presidentContact,
           description: updated.description,
-          logoUrl: updated.bannerImage
+          logoUrl: updated.bannerImage,
+          mapUrl: updated.mapUrl || ''
         })
       });
     } catch (err) {
@@ -725,6 +857,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteFellowship = async (id: string) => {
     const target = fellowships.find(f => f.id === id);
+    markIdDeleted(id, target?.name);
+    if (target?.acronym) markIdDeleted(target.acronym);
     setFellowships(prev => prev.filter(f => f.id !== id));
     try {
       const headers = await getAuthHeaders();
@@ -787,6 +921,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteExecutive = async (id: string) => {
     const target = executives.find(e => e.id === id);
+    markIdDeleted(id, target?.name);
     setExecutives(prev => prev.filter(e => e.id !== id));
     try {
       const headers = await getAuthHeaders();
@@ -795,6 +930,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.warn('Executive delete failed:', err);
     }
     addAuditLog('Removed executive officer', target?.name || id, 'delete');
+  };
+
+  // --- PAST / HISTORICAL EXECUTIVES CRUD ---
+  const addHistoricalExecutive = async (item: HistoricalExecutive) => {
+    setHistoricalExecutives(prev => {
+      const updated = [item, ...prev.filter(h => h.tenure !== item.tenure)];
+      try {
+        localStorage.setItem('jccf_historical_executives', JSON.stringify(updated));
+      } catch (_) {}
+      return updated;
+    });
+    addAuditLog('Added past administration record', `${item.tenure} - ${item.president}`, 'create');
+  };
+
+  const updateHistoricalExecutive = async (tenureOrId: string, item: Partial<HistoricalExecutive>) => {
+    setHistoricalExecutives(prev => {
+      const updated = prev.map(h => (h.tenure === tenureOrId || h.id === tenureOrId) ? { ...h, ...item } : h);
+      try {
+        localStorage.setItem('jccf_historical_executives', JSON.stringify(updated));
+      } catch (_) {}
+      return updated;
+    });
+    addAuditLog('Updated past administration record', tenureOrId, 'update');
+  };
+
+  const deleteHistoricalExecutive = async (tenureOrId: string) => {
+    setHistoricalExecutives(prev => {
+      const updated = prev.filter(h => h.tenure !== tenureOrId && h.id !== tenureOrId);
+      try {
+        localStorage.setItem('jccf_historical_executives', JSON.stringify(updated));
+      } catch (_) {}
+      return updated;
+    });
+    addAuditLog('Deleted past administration record', tenureOrId, 'delete');
   };
 
   // --- RESOURCES CRUD (PostgreSQL) ---
@@ -816,7 +985,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           fileSize: item.fileSize,
           downloadUrl: item.downloadUrl,
           description: item.description,
-          uploadedBy: 'JCCF Academic Directorate'
+          uploadedBy: 'JCCF Central Secretariat'
         })
       });
       if (res.ok) {
@@ -827,7 +996,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.warn('Resource sync failed:', err);
     }
 
-    addAuditLog('Uploaded past question/handbook', item.title, 'create');
+    addAuditLog('Uploaded handbook/study resource', item.title, 'create');
     return newRecord;
   };
 
@@ -848,6 +1017,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteResource = async (id: string) => {
     const target = resources.find(r => r.id === id);
+    markIdDeleted(id, target?.title);
     setResources(prev => prev.filter(r => r.id !== id));
     try {
       const headers = await getAuthHeaders();
@@ -1112,6 +1282,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteAnnouncement,
 
         mediaList,
+        youtubeChannel,
+        isSyncingYouTube,
+        fetchYouTubeVideos,
         addMedia,
         updateMedia,
         deleteMedia,
@@ -1130,6 +1303,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addExecutive,
         updateExecutive,
         deleteExecutive,
+
+        historicalExecutives,
+        addHistoricalExecutive,
+        updateHistoricalExecutive,
+        deleteHistoricalExecutive,
 
         resources,
         addResource,
