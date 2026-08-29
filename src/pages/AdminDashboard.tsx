@@ -39,10 +39,14 @@ import {
   RotateCcw,
   LogIn,
   Database,
-  RefreshCw
+  RefreshCw,
+  Terminal,
+  Activity,
+  Clipboard
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
+import { runSupabaseDiagnostics, DbDiagnosticReport } from '../utils/dbDiagnostics';
 import { 
   Announcement, 
   FellowshipEvent, 
@@ -72,7 +76,7 @@ type AdminTab =
   | 'settings';
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }) => {
-  const { currentUser, userProfile, isSuperAdmin: authIsSuperAdmin, loginWithGoogle, logout: authLogout } = useAuth();
+  const { currentUser, userProfile, isSuperAdmin: authIsSuperAdmin, isFirebaseConfigured, loginWithGoogle, logout: authLogout } = useAuth();
   const {
     announcements,
     addAnnouncement,
@@ -201,6 +205,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
   const [tempSettings, setTempSettings] = useState(settings);
   const [settingsSaved, setSettingsSaved] = useState(false);
 
+  // Database Write Diagnostics State
+  const [isRunningDiagnostics, setIsRunningDiagnostics] = useState(false);
+  const [diagnosticReport, setDiagnosticReport] = useState<DbDiagnosticReport | null>(null);
+  const [diagnosticCopied, setDiagnosticCopied] = useState(false);
+
+  const handleExecuteDiagnostics = async () => {
+    setIsRunningDiagnostics(true);
+    setDiagnosticCopied(false);
+    try {
+      const report = await runSupabaseDiagnostics();
+      setDiagnosticReport(report);
+    } catch (err: any) {
+      console.error('Diagnostic error:', err);
+    } finally {
+      setIsRunningDiagnostics(false);
+    }
+  };
+
   // ================= AUTHENTICATION HANDLERS =================
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -282,10 +304,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
               type="button"
               onClick={async () => {
                 setLoginError('');
+                if (!isFirebaseConfigured) {
+                  setLoginError('Google Sign-In is not active in this environment. Please sign in below using your Administrator Email & PIN / Password.');
+                  if (!loginInput) {
+                    setLoginInput('jayeobapeace19459@gmail.com');
+                  }
+                  return;
+                }
                 try {
                   await loginWithGoogle();
                 } catch (err: any) {
-                  setLoginError(err.message || 'Google authentication failed. Please ensure your account is authorized.');
+                  setLoginError(err.message || 'Google authentication failed. Please sign in below using your Administrator Email & PIN.');
                 }
               }}
               className="w-full py-3 bg-white hover:bg-[#FAFAFA] border-2 border-[#E5E5E5] hover:border-[#B5121B] text-[#171717] font-bold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-3 cursor-pointer shadow-xs"
@@ -1857,6 +1886,200 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                     </button>
                   </div>
                 </form>
+
+                {/* ================= DATABASE & SUPABASE WRITE DIAGNOSTICS ================= */}
+                <div className="pt-6 border-t border-[#E5E5E5] space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-base font-bold font-heading text-[#171717] flex items-center gap-2">
+                        <Database className="w-4 h-4 text-[#B5121B]" />
+                        <span>Supabase & PostgreSQL Write Diagnostics</span>
+                      </h3>
+                      <p className="text-xs text-[#666666]">
+                        Performs an end-to-end write cycle probe (INSERT → SELECT → UPDATE → DELETE) to verify cloud database persistence.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={isRunningDiagnostics}
+                      onClick={handleExecuteDiagnostics}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-xs ${
+                        isRunningDiagnostics 
+                          ? 'bg-[#E5E5E5] text-[#666666] cursor-not-allowed'
+                          : 'bg-[#171717] hover:bg-[#333333] text-white'
+                      }`}
+                    >
+                      {isRunningDiagnostics ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Testing Write Pipeline...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Activity className="w-3.5 h-3.5 text-[#38BDF8]" />
+                          <span>Run Database Write Test</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* DevTools Console Notice */}
+                  <div className="p-3.5 bg-[#FAFAFA] rounded-xl border border-[#E5E5E5] flex items-start gap-2.5 text-xs text-[#666666]">
+                    <Terminal className="w-4 h-4 text-[#B5121B] shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-[#171717]">Developer Console Telemetry</p>
+                      <p className="text-[11px] mt-0.5">
+                        Running this diagnostic writes color-coded, formatted reports to your browser console (<code className="px-1 py-0.5 bg-white border border-[#E5E5E5] rounded text-[10px] text-[#171717] font-mono">F12</code> or <code className="px-1 py-0.5 bg-white border border-[#E5E5E5] rounded text-[10px] text-[#171717] font-mono">Cmd+Option+I</code>). You can also run <code className="px-1 py-0.5 bg-white border border-[#E5E5E5] rounded text-[10px] text-[#171717] font-mono">window.runDatabaseDiagnostics()</code> in the console.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Diagnostic Results Card */}
+                  {diagnosticReport && (
+                    <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
+                      diagnosticReport.success 
+                        ? 'bg-[#008753]/5 border-[#008753]/30'
+                        : 'bg-[#B5121B]/5 border-[#B5121B]/30'
+                    }`}>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E5E5E5]/60 pb-3">
+                        <div className="flex items-center gap-2">
+                          {diagnosticReport.success ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[#008753] text-white">
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              <span>Database Write Tests Passed</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[#B5121B] text-white">
+                              <AlertCircle className="w-3.5 h-3.5" />
+                              <span>Database Write Failed</span>
+                            </span>
+                          )}
+                          <span className="text-xs font-mono text-[#666666]">
+                            Total Latency: {diagnosticReport.totalDurationMs}ms
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(JSON.stringify(diagnosticReport, null, 2));
+                              setDiagnosticCopied(true);
+                              setTimeout(() => setDiagnosticCopied(false), 2500);
+                            }}
+                            className="px-2.5 py-1 bg-white hover:bg-[#FAFAFA] border border-[#E5E5E5] rounded-lg text-[11px] font-bold text-[#171717] flex items-center gap-1 cursor-pointer transition-colors"
+                          >
+                            {diagnosticCopied ? (
+                              <>
+                                <Check className="w-3 h-3 text-[#008753]" />
+                                <span>Report Copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Clipboard className="w-3 h-3 text-[#666666]" />
+                                <span>Copy Diagnostic JSON</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Connection Details Pills */}
+                      {diagnosticReport.databaseInfo && (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                          <div className="p-2.5 bg-white rounded-xl border border-[#E5E5E5]">
+                            <span className="text-[10px] text-[#666666] block uppercase font-bold">Host</span>
+                            <span className="font-mono text-[#171717] truncate block" title={diagnosticReport.databaseInfo.host}>
+                              {diagnosticReport.databaseInfo.host || 'localhost'}
+                            </span>
+                          </div>
+                          <div className="p-2.5 bg-white rounded-xl border border-[#E5E5E5]">
+                            <span className="text-[10px] text-[#666666] block uppercase font-bold">Database</span>
+                            <span className="font-mono text-[#171717] truncate block">
+                              {diagnosticReport.databaseInfo.database || 'postgres'}
+                            </span>
+                          </div>
+                          <div className="p-2.5 bg-white rounded-xl border border-[#E5E5E5]">
+                            <span className="text-[10px] text-[#666666] block uppercase font-bold">Public Tables</span>
+                            <span className="font-mono font-bold text-[#171717]">
+                              {diagnosticReport.databaseInfo.tablesFound?.length || 0} tables
+                            </span>
+                          </div>
+                          <div className="p-2.5 bg-white rounded-xl border border-[#E5E5E5]">
+                            <span className="text-[10px] text-[#666666] block uppercase font-bold">SSL Mode</span>
+                            <span className="font-mono text-[#008753] font-bold">
+                              rejectUnauthorized: false
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Step Execution Sequence */}
+                      <div className="space-y-1.5">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#666666] block">
+                          Execution Pipeline:
+                        </span>
+                        <div className="space-y-1.5">
+                          {diagnosticReport.steps.map((st, idx) => (
+                            <div
+                              key={idx}
+                              className={`p-2.5 rounded-xl text-xs flex items-center justify-between border ${
+                                st.status === 'passed'
+                                  ? 'bg-white border-[#E5E5E5] text-[#171717]'
+                                  : 'bg-[#FDECEC] border-[#F8D0D0] text-[#8B0000]'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                {st.status === 'passed' ? (
+                                  <CheckCircle className="w-3.5 h-3.5 text-[#008753] shrink-0" />
+                                ) : (
+                                  <AlertCircle className="w-3.5 h-3.5 text-[#B5121B] shrink-0" />
+                                )}
+                                <span className="font-bold">{st.step}</span>
+                                {st.details && (
+                                  <span className="text-[#666666] text-[11px] hidden sm:inline">
+                                    — {st.details}
+                                  </span>
+                                )}
+                              </div>
+                              {st.durationMs !== undefined && (
+                                <span className="text-[10px] font-mono text-[#666666] shrink-0 ml-2">
+                                  {st.durationMs}ms
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Error & Troubleshooting Guidance */}
+                      {diagnosticReport.error && (
+                        <div className="p-4 bg-[#FDECEC] rounded-xl border border-[#F8D0D0] space-y-2 text-xs text-[#8B0000]">
+                          <div className="flex items-center gap-1.5 font-bold">
+                            <AlertCircle className="w-4 h-4 text-[#B5121B]" />
+                            <span>Error Details:</span>
+                          </div>
+                          <p className="font-mono bg-white/70 p-2.5 rounded-lg border border-[#F8D0D0] text-[11px] break-all">
+                            {diagnosticReport.error.message}
+                            {diagnosticReport.error.code && ` (Code: ${diagnosticReport.error.code})`}
+                          </p>
+
+                          {diagnosticReport.troubleshootingGuidance && diagnosticReport.troubleshootingGuidance.length > 0 && (
+                            <div className="pt-2 space-y-1">
+                              <span className="font-bold block text-[11px] text-[#171717]">Recommended Fixes:</span>
+                              <ul className="list-disc list-inside space-y-0.5 text-[11px] text-[#666666]">
+                                {diagnosticReport.troubleshootingGuidance.map((guide, gIdx) => (
+                                  <li key={gIdx}>{guide}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

@@ -289,16 +289,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isSyncing, setIsSyncing] = useState(false);
 
   const [adminToken, setAdminToken] = useState<string | null>(() => {
-    return sessionStorage.getItem('jccf_admin_token') || null;
+    return sessionStorage.getItem('jccf_admin_token') || localStorage.getItem('jccf_admin_token') || null;
   });
 
   // Manual or PIN Superadmin session state
   const [pinAdminActive, setPinAdminActive] = useState<boolean>(() => {
-    return sessionStorage.getItem('jccf_superadmin_session') === 'active' && !!sessionStorage.getItem('jccf_admin_token');
+    return (sessionStorage.getItem('jccf_superadmin_session') === 'active' || localStorage.getItem('jccf_superadmin_session') === 'active') && 
+      !!(sessionStorage.getItem('jccf_admin_token') || localStorage.getItem('jccf_admin_token'));
   });
 
   const [superAdminUser, setSuperAdminUser] = useState<SuperAdminUser | null>(() => {
-    const user = sessionStorage.getItem('jccf_superadmin_user');
+    const user = sessionStorage.getItem('jccf_superadmin_user') || localStorage.getItem('jccf_superadmin_user');
     if (user) {
       try {
         return JSON.parse(user);
@@ -316,10 +317,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
     };
+    const currentAdminToken = adminToken || sessionStorage.getItem('jccf_admin_token') || localStorage.getItem('jccf_admin_token');
     if (idToken) {
       headers['Authorization'] = `Bearer ${idToken}`;
-    } else if (adminToken) {
-      headers['Authorization'] = `Bearer ${adminToken}`;
+    } else if (currentAdminToken) {
+      headers['Authorization'] = `Bearer ${currentAdminToken}`;
     }
     return headers;
   }, [idToken, adminToken]);
@@ -702,7 +704,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // --- ANNOUNCEMENTS CRUD (PostgreSQL) ---
   const addAnnouncement = async (item: Omit<Announcement, 'id'>): Promise<Announcement> => {
     const tempId = 'ann-' + Date.now();
-    const newRecord: Announcement = { ...item, id: tempId };
+    let newRecord: Announcement = { ...item, id: tempId };
     setAnnouncements(prev => [newRecord, ...prev]);
 
     try {
@@ -721,7 +723,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       if (res.ok) {
         const saved = await res.json();
-        newRecord.id = String(saved.id);
+        const savedId = String(saved.id);
+        newRecord = { ...newRecord, id: savedId };
+        setAnnouncements(prev => prev.map(a => a.id === tempId ? { ...a, id: savedId } : a));
       }
     } catch (err) {
       console.warn('Backend sync failed, saved in memory:', err);
@@ -903,7 +907,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // --- EVENTS CRUD (PostgreSQL) ---
   const addEvent = async (item: Omit<FellowshipEvent, 'id'>): Promise<FellowshipEvent> => {
-    const newRecord: FellowshipEvent = { ...item, id: 'event-' + Date.now() };
+    const tempId = 'event-' + Date.now();
+    let newRecord: FellowshipEvent = { ...item, id: tempId };
     setEvents(prev => [newRecord, ...prev]);
 
     try {
@@ -924,7 +929,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       if (res.ok) {
         const saved = await res.json();
-        newRecord.id = String(saved.id);
+        const savedId = String(saved.id);
+        newRecord = { ...newRecord, id: savedId };
+        setEvents(prev => prev.map(e => e.id === tempId ? { ...e, id: savedId } : e));
       }
     } catch (err) {
       console.warn('Events sync failed:', err);
@@ -964,7 +971,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // --- FELLOWSHIPS CRUD (PostgreSQL) ---
   const addFellowship = async (item: Omit<Fellowship, 'id'>): Promise<Fellowship> => {
-    const newRecord: Fellowship = { ...item, id: 'fel-' + Date.now() };
+    const tempId = 'fel-' + Date.now();
+    let newRecord: Fellowship = { ...item, id: tempId };
     setFellowships(prev => [...prev, newRecord]);
 
     try {
@@ -987,7 +995,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       if (res.ok) {
         const saved = await res.json();
-        newRecord.id = String(saved.id);
+        const savedId = String(saved.id);
+        newRecord = { ...newRecord, id: savedId };
+        setFellowships(prev => prev.map(f => f.id === tempId ? { ...f, id: savedId } : f));
       }
     } catch (err) {
       console.warn('Fellowship sync failed:', err);
@@ -1039,7 +1049,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // --- EXECUTIVES CRUD (PostgreSQL) ---
   const addExecutive = async (item: Omit<ExecutiveLeader, 'id'>): Promise<ExecutiveLeader> => {
-    const newRecord: ExecutiveLeader = { ...item, id: 'exec-' + Date.now() };
+    const tempId = 'exec-' + Date.now();
+    let newRecord: ExecutiveLeader = { ...item, id: tempId };
     setExecutives(prev => [...prev, newRecord]);
 
     try {
@@ -1062,7 +1073,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       if (res.ok) {
         const saved = await res.json();
-        newRecord.id = String(saved.id);
+        const savedId = String(saved.id);
+        newRecord = { ...newRecord, id: savedId };
+        setExecutives(prev => prev.map(e => e.id === tempId ? { ...e, id: savedId } : e));
       }
     } catch (err) {
       console.warn('Executive sync failed:', err);
@@ -1185,7 +1198,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // --- RESOURCES CRUD (PostgreSQL) ---
   const addResource = async (item: Omit<ResourceItem, 'id'>): Promise<ResourceItem> => {
-    const newRecord: ResourceItem = { ...item, id: 'res-' + Date.now() };
+    const tempId = 'res-' + Date.now();
+    let newRecord: ResourceItem = { ...item, id: tempId };
     setResources(prev => [newRecord, ...prev]);
 
     try {
@@ -1207,7 +1221,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       if (res.ok) {
         const saved = await res.json();
-        newRecord.id = String(saved.id);
+        const savedId = String(saved.id);
+        newRecord = { ...newRecord, id: savedId };
+        setResources(prev => prev.map(r => r.id === tempId ? { ...r, id: savedId } : r));
       }
     } catch (err) {
       console.warn('Resource sync failed:', err);

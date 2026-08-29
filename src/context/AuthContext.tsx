@@ -5,7 +5,7 @@ import {
   signOut, 
   onAuthStateChanged 
 } from 'firebase/auth';
-import { auth, googleAuthProvider } from '../lib/firebase';
+import { auth, googleAuthProvider, isFirebaseConfigured } from '../lib/firebase';
 
 export interface UserProfile {
   id?: number;
@@ -23,6 +23,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isSuperAdmin: boolean;
   isLoading: boolean;
+  isFirebaseConfigured: boolean;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   getIdToken: () => Promise<string | null>;
@@ -59,34 +60,55 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
       }
     } catch (err) {
-      console.error('Error fetching user profile:', err);
+      console.warn('Could not fetch user profile from server:', err);
     }
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setIsLoading(true);
-      if (user) {
-        setCurrentUser(user);
-        try {
-          const token = await user.getIdToken();
-          setIdToken(token);
-          await fetchProfile(user, token);
-        } catch (err) {
-          console.error('Error getting user ID token:', err);
-        }
-      } else {
-        setCurrentUser(null);
-        setUserProfile(null);
-        setIdToken(null);
-      }
+    if (!isFirebaseConfigured) {
       setIsLoading(false);
-    });
+      return;
+    }
 
-    return () => unsubscribe();
+    try {
+      const unsubscribe = onAuthStateChanged(
+        auth,
+        async (user) => {
+          setIsLoading(true);
+          if (user) {
+            setCurrentUser(user);
+            try {
+              const token = await user.getIdToken();
+              setIdToken(token);
+              await fetchProfile(user, token);
+            } catch (err) {
+              console.warn('Could not obtain user ID token:', err);
+            }
+          } else {
+            setCurrentUser(null);
+            setUserProfile(null);
+            setIdToken(null);
+          }
+          setIsLoading(false);
+        },
+        (error) => {
+          console.warn('Firebase Auth notice:', error?.message);
+          setIsLoading(false);
+        }
+      );
+
+      return () => unsubscribe();
+    } catch (err) {
+      console.warn('Firebase auth listener skipped:', err);
+      setIsLoading(false);
+    }
   }, []);
 
   const loginWithGoogle = async () => {
+    if (!isFirebaseConfigured) {
+      throw new Error('Google Sign-in is not configured with a valid Firebase API Key in this environment. Please use the Administrator Email & PIN / Passkey login below.');
+    }
+
     setIsLoading(true);
     try {
       const result = await signInWithPopup(auth, googleAuthProvider);
@@ -94,7 +116,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIdToken(token);
       await fetchProfile(result.user, token);
     } catch (err: any) {
-      console.error('Google Sign-in failed:', err);
+      if (err?.code === 'auth/api-key-not-valid' || err?.message?.includes('api-key-not-valid')) {
+        throw new Error('Google Sign-in is not configured with a valid Firebase API Key. Please use the Administrator Email & PIN / Passkey login below.');
+      }
+      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
+        throw new Error('Sign-in popup was closed. Please try again.');
+      }
       throw err;
     } finally {
       setIsLoading(false);
@@ -103,23 +130,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = async () => {
     try {
-      await signOut(auth);
+      if (isFirebaseConfigured) {
+        await signOut(auth);
+      }
       setCurrentUser(null);
       setUserProfile(null);
       setIdToken(null);
     } catch (err) {
-      console.error('Sign-out failed:', err);
+      console.warn('Sign-out completed with notice:', err);
+      setCurrentUser(null);
+      setUserProfile(null);
+      setIdToken(null);
     }
   };
 
   const getIdToken = async (): Promise<string | null> => {
-    if (!currentUser) return null;
+    if (!currentUser || !isFirebaseConfigured) return null;
     try {
       const token = await currentUser.getIdToken(true);
       setIdToken(token);
       return token;
     } catch (err) {
-      console.error('Failed refreshing token:', err);
+      console.warn('Token refresh notice:', err);
       return idToken;
     }
   };
@@ -146,6 +178,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAdmin,
         isSuperAdmin,
         isLoading,
+        isFirebaseConfigured,
         loginWithGoogle,
         logout,
         getIdToken,

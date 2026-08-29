@@ -77,19 +77,14 @@ export const Hero: React.FC<HeroProps> = ({
               </button>
             </div>
 
-            {/* Key Campus Stats */}
-            <div className="pt-6 border-t border-[#E5E5E5] grid grid-cols-3 gap-4 max-w-lg">
-              <div>
-                <span className="text-2xl sm:text-3xl font-black text-[#B5121B] block font-heading">24+</span>
-                <span className="text-xs text-[#666666] font-medium">Campus Fellowships</span>
-              </div>
-              <div>
-                <span className="text-2xl sm:text-3xl font-black text-[#171717] block font-heading">3,500+</span>
-                <span className="text-xs text-[#666666] font-medium">Active Believers</span>
-              </div>
-              <div>
-                <span className="text-2xl sm:text-3xl font-black text-[#8B0000] block font-heading">9 Schools</span>
-                <span className="text-xs text-[#666666] font-medium">Full FUTA Reach</span>
+            {/* Key Campus Stat */}
+            <div className="pt-6 border-t border-[#E5E5E5] flex flex-wrap items-center gap-4">
+              <div className="inline-flex items-center gap-3.5 bg-white px-4 py-3 rounded-2xl border border-[#E5E5E5] shadow-xs">
+                <span className="text-3xl sm:text-4xl font-black text-[#B5121B] font-heading">24+</span>
+                <div className="text-left">
+                  <span className="text-sm font-extrabold text-[#171717] block font-heading">Fellowships Across FUTA</span>
+                  <span className="text-xs text-[#666666]">Registered Christian campus fellowships united under JCCF</span>
+                </div>
               </div>
             </div>
 

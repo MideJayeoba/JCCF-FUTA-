@@ -1,39 +1,42 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool, PoolConfig } from 'pg';
+import pg from 'pg';
+const { Pool } = pg;
 import * as schema from './schema.ts';
 
-// Ensure cloud PostgreSQL providers with self-signed certificate chains (Supabase, Neon, AWS) connect smoothly
-if (process.env.NODE_ENV !== 'production' || process.env.DATABASE_URL) {
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-}
+// Ensure cloud PostgreSQL providers with self-signed certificate chains (Supabase, Neon, Cloud SQL) connect smoothly
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 declare global {
-  var _postgresPool: Pool | undefined;
+  var _postgresPool: pg.Pool | undefined;
 }
 
-export const createPool = () => {
+export const createPool = (): pg.Pool => {
   if (!global._postgresPool) {
     const rawConnectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
     if (rawConnectionString) {
-      // Strip sslmode=... so pg-connection-string doesn't force rejectUnauthorized: true
+      // Strip search params to prevent pg-connection-string from overriding rejectUnauthorized
       let cleanConnStr = rawConnectionString;
-      if (cleanConnStr.includes('sslmode=')) {
-        cleanConnStr = cleanConnStr.replace(/([?&])sslmode=[^&]+(&|$)/, '$1').replace(/[?&]$/, '');
+      try {
+        const parsed = new URL(rawConnectionString);
+        parsed.search = '';
+        cleanConnStr = parsed.toString();
+      } catch (_) {
+        if (cleanConnStr.includes('?')) {
+          cleanConnStr = cleanConnStr.split('?')[0];
+        }
       }
 
       const isLocal = cleanConnStr.includes('localhost') || cleanConnStr.includes('127.0.0.1');
 
-      const poolConfig: PoolConfig = {
+      global._postgresPool = new Pool({
         connectionString: cleanConnStr,
         ssl: isLocal ? false : { rejectUnauthorized: false },
         max: 10,
         connectionTimeoutMillis: 15000,
-      };
-
-      global._postgresPool = new Pool(poolConfig);
+      });
     } else {
-      const poolConfig: PoolConfig = {
+      global._postgresPool = new Pool({
         host: process.env.SQL_HOST || process.env.PGHOST || 'localhost',
         port: Number(process.env.SQL_PORT || process.env.PGPORT || 5432),
         user: process.env.SQL_USER || process.env.PGUSER || 'postgres',
@@ -42,9 +45,7 @@ export const createPool = () => {
         ssl: process.env.SQL_SSL === 'true' ? { rejectUnauthorized: false } : false,
         max: 10,
         connectionTimeoutMillis: 15000,
-      };
-
-      global._postgresPool = new Pool(poolConfig);
+      });
     }
 
     global._postgresPool.on('error', (err) => {

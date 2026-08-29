@@ -28,7 +28,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { currentUser, userProfile, isSuperAdmin: authIsSuperAdmin, loginWithGoogle, logout } = useAuth();
+  const { currentUser, userProfile, isSuperAdmin: authIsSuperAdmin, isFirebaseConfigured, loginWithGoogle, logout } = useAuth();
   const { isSuperAdmin: appIsSuperAdmin, isSyncing } = useApp();
 
   const isSuper = authIsSuperAdmin || appIsSuperAdmin;
@@ -62,10 +62,15 @@ export const Navbar: React.FC<NavbarProps> = ({
       if (currentUser) {
         await logout();
       } else {
+        if (!isFirebaseConfigured) {
+          onNavigate('admin');
+          return;
+        }
         await loginWithGoogle();
       }
-    } catch (err) {
-      console.error('Auth error in navbar:', err);
+    } catch (err: any) {
+      console.warn('Navbar sign-in notice:', err?.message || err);
+      onNavigate('admin');
     }
   };
 
