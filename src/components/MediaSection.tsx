@@ -46,6 +46,21 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
     }
   }, [mediaList.length, hasAttemptedAutoSync, fetchYouTubeVideos]);
 
+  // Handle Escape key to close modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveVideoModal(null);
+      }
+    };
+    if (activeVideoModal) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeVideoModal]);
+
   const filteredMedia = mediaList.filter((item) => {
     const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -323,79 +338,107 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
 
       {/* Video Playback Modal */}
       {activeVideoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#171717]/90 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-3xl w-full overflow-hidden shadow-2xl border border-[#E5E5E5] flex flex-col">
+        <div 
+          onClick={() => setActiveVideoModal(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#171717]/85 backdrop-blur-xs animate-in fade-in overflow-y-auto"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl sm:rounded-3xl max-w-3xl w-full overflow-hidden shadow-2xl border border-[#E5E5E5] flex flex-col max-h-[90vh] my-auto"
+          >
             
-            {/* Modal Header */}
-            <div className="p-4 sm:p-5 flex items-center justify-between border-b border-[#E5E5E5] bg-[#FAFAFA]">
-              <div>
+            {/* Sticky Modal Header with Accessible Close Button */}
+            <div className="p-3.5 sm:p-4.5 flex items-center justify-between border-b border-[#E5E5E5] bg-[#FAFAFA] shrink-0 sticky top-0 z-10">
+              <div className="min-w-0 pr-2">
                 <span className="text-[10px] font-black uppercase tracking-wider bg-[#B5121B] text-white px-2 py-0.5 rounded">
                   {activeVideoModal.category}
                 </span>
-                <h3 className="text-sm sm:text-base font-bold text-[#171717] mt-1 font-heading">
+                <h3 className="text-xs sm:text-base font-bold text-[#171717] mt-1 font-heading truncate">
                   {activeVideoModal.title}
                 </h3>
               </div>
               <button
                 onClick={() => setActiveVideoModal(null)}
-                className="w-8 h-8 rounded-full bg-white hover:bg-[#E5E5E5] text-[#171717] flex items-center justify-center border border-[#E5E5E5] cursor-pointer shrink-0 ml-2"
+                title="Close modal (Esc)"
+                aria-label="Close modal"
+                className="w-9 h-9 rounded-full bg-white hover:bg-[#FDECEC] hover:text-[#B5121B] text-[#171717] flex items-center justify-center border border-[#E5E5E5] shadow-xs cursor-pointer shrink-0 transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Video Player Frame */}
-            <div className="relative aspect-video bg-black flex items-center justify-center">
-              {extractYouTubeId(activeVideoModal.youtubeId) ? (
-                <iframe
-                  src={getYouTubeEmbedUrl(extractYouTubeId(activeVideoModal.youtubeId)!, true)}
-                  title={activeVideoModal.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  className="w-full h-full border-0"
-                />
-              ) : (
-                <div className="relative w-full h-full">
-                  <img
-                    src={activeVideoModal.thumbnail}
-                    alt={activeVideoModal.title}
-                    className="w-full h-full object-cover opacity-60"
-                    referrerPolicy="no-referrer"
+            {/* Scrollable Modal Content (Video & Description) */}
+            <div className="overflow-y-auto flex-1">
+              {/* Video Player Frame */}
+              <div className="relative aspect-video bg-black flex items-center justify-center shrink-0">
+                {extractYouTubeId(activeVideoModal.youtubeId) ? (
+                  <iframe
+                    src={getYouTubeEmbedUrl(extractYouTubeId(activeVideoModal.youtubeId)!, true)}
+                    title={activeVideoModal.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    className="w-full h-full border-0"
                   />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white space-y-3 p-4 text-center">
-                    <div className="w-16 h-16 rounded-full bg-[#B5121B] flex items-center justify-center shadow-xl">
-                      <Play className="w-8 h-8 fill-white ml-1" />
+                ) : (
+                  <div className="relative w-full h-full">
+                    <img
+                      src={activeVideoModal.thumbnail}
+                      alt={activeVideoModal.title}
+                      className="w-full h-full object-cover opacity-60"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-white space-y-3 p-4 text-center">
+                      <div className="w-16 h-16 rounded-full bg-[#B5121B] flex items-center justify-center shadow-xl">
+                        <Play className="w-8 h-8 fill-white ml-1" />
+                      </div>
+                      <span className="text-sm font-bold bg-black/60 px-3 py-1 rounded-full">
+                        Broadcast Stream ({activeVideoModal.duration || 'Full Session'})
+                      </span>
                     </div>
-                    <span className="text-sm font-bold bg-black/60 px-3 py-1 rounded-full">
-                      Broadcast Stream ({activeVideoModal.duration || 'Full Session'})
-                    </span>
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* Video Description & Info */}
-            <div className="p-5 text-left space-y-3 bg-white">
-              <p className="text-xs sm:text-sm text-[#171717] leading-relaxed">
-                {activeVideoModal.description}
-              </p>
-              <div className="flex items-center justify-between flex-wrap gap-2 text-xs text-[#666666] pt-2 border-t border-[#E5E5E5]">
-                <div>
-                  <span>Minister: <strong className="text-[#171717]">{activeVideoModal.minister}</strong></span>
-                  {activeVideoModal.date && <span className="ml-3">Date: {activeVideoModal.date}</span>}
-                </div>
-                {extractYouTubeId(activeVideoModal.youtubeId) && (
-                  <a
-                    href={`https://www.youtube.com/watch?v=${extractYouTubeId(activeVideoModal.youtubeId)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#FDECEC] hover:bg-[#F8D0D0] text-[#B5121B] rounded-lg font-bold text-xs transition-colors"
-                  >
-                    <span>Watch on YouTube</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
                 )}
               </div>
+
+              {/* Video Description & Info */}
+              <div className="p-4 sm:p-5 text-left space-y-3 bg-white">
+                <div className="space-y-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#666666] block">Description & Message Notes</span>
+                  <p className="text-xs sm:text-sm text-[#171717] leading-relaxed whitespace-pre-line">
+                    {activeVideoModal.description}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between flex-wrap gap-2 text-xs text-[#666666] pt-3 border-t border-[#E5E5E5]">
+                  <div>
+                    <span>Minister: <strong className="text-[#171717]">{activeVideoModal.minister}</strong></span>
+                    {activeVideoModal.date && <span className="ml-3">Date: {activeVideoModal.date}</span>}
+                  </div>
+                  {extractYouTubeId(activeVideoModal.youtubeId) && (
+                    <a
+                      href={`https://www.youtube.com/watch?v=${extractYouTubeId(activeVideoModal.youtubeId)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#FDECEC] hover:bg-[#F8D0D0] text-[#B5121B] rounded-lg font-bold text-xs transition-colors"
+                    >
+                      <span>Watch on YouTube</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Bottom Footer / Quick Action Bar */}
+            <div className="p-3 bg-[#FAFAFA] border-t border-[#E5E5E5] flex items-center justify-between shrink-0">
+              <span className="text-[11px] text-[#666666]">
+                Press <kbd className="px-1.5 py-0.5 bg-white border border-[#E5E5E5] rounded text-[10px] font-mono">ESC</kbd> or click outside to close
+              </span>
+              <button
+                onClick={() => setActiveVideoModal(null)}
+                className="px-4 py-1.5 bg-[#171717] hover:bg-[#B5121B] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                Close Video
+              </button>
             </div>
 
           </div>

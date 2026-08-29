@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
+import { JCCFLogo } from './JCCFLogo';
 import { 
   ArrowRight, 
   Users, 
@@ -129,14 +130,14 @@ export const Hero: React.FC<HeroProps> = ({
                 </div>
               </div>
 
-              {/* Floating Verified Badge */}
-              <div className="absolute -top-4 -left-4 bg-white p-3 rounded-2xl shadow-lg border border-[#E5E5E5] flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[#B5121B] text-white flex items-center justify-center">
-                  <Flame className="w-4 h-4" />
+              {/* Floating Official Crest Badge */}
+              <div className="absolute -top-4 -left-4 bg-white p-2.5 rounded-2xl shadow-lg border border-[#E5E5E5] flex items-center gap-2.5">
+                <div className="shrink-0">
+                  <JCCFLogo size={36} />
                 </div>
                 <div className="text-left pr-2">
                   <span className="text-[10px] text-[#666666] uppercase font-bold block">FUTA Apex Body</span>
-                  <span className="text-xs font-black text-[#171717]">100% Student-Led</span>
+                  <span className="text-xs font-black text-[#171717]">Official Crest</span>
                 </div>
               </div>
 

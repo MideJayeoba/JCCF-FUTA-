@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
+import { JCCFLogo } from './JCCFLogo';
 
 interface NavbarProps {
   currentPage: NavigationPage;
@@ -85,11 +86,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center gap-3 group text-left cursor-pointer focus:outline-none"
             aria-label="JCCF FUTA Home"
           >
-            {/* Logo Mark */}
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#B5121B] flex items-center justify-center text-white shadow-xs group-hover:bg-[#8B0000] transition-colors">
-              <span className="font-extrabold text-base sm:text-lg tracking-tighter font-heading">
-                JCCF
-              </span>
+            {/* Official Logo Emblem */}
+            <div className="relative group-hover:scale-105 transition-transform duration-200">
+              <JCCFLogo size={46} />
             </div>
 
             {/* Wordmark */}

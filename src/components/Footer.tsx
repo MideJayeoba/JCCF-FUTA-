@@ -12,6 +12,7 @@ import {
   Facebook,
   Youtube
 } from 'lucide-react';
+import { JCCFLogo } from './JCCFLogo';
 
 interface FooterProps {
   onNavigate: (page: NavigationPage) => void;
@@ -38,8 +39,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenGiveModal }) =
           {/* Col 1 & 2: Brand & Description */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white text-[#8B0000] flex items-center justify-center font-black font-heading text-base shadow-sm">
-                JCCF
+              <div className="rounded-full bg-white p-0.5 shadow-md flex items-center justify-center">
+                <JCCFLogo size={44} />
               </div>
               <div>
                 <span className="text-lg font-black tracking-tight text-white font-heading block leading-none">

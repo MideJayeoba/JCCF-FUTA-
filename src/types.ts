@@ -40,7 +40,7 @@ export interface ServiceUnit {
   headName: string;
   headTitle: string;
   description: string;
-  duties: string[];
+  duties?: string[];
   meetingTime?: string;
   venue?: string;
   skillsNeeded?: string[];

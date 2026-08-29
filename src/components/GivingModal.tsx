@@ -20,6 +20,7 @@ import {
 import confetti from 'canvas-confetti';
 import { useApp } from '../context/AppContext';
 import { DonationRecord } from '../types';
+import { JCCFLogo } from './JCCFLogo';
 
 interface GivingModalProps {
   isOpen: boolean;
@@ -46,6 +47,21 @@ export const GivingModal: React.FC<GivingModalProps> = ({ isOpen, onClose }) => 
   const [palmpayFlow, setPalmpayFlow] = useState<'app' | 'account' | 'qr'>('app');
   const [isProcessing, setIsProcessing] = useState(false);
   const [completedReceipt, setCompletedReceipt] = useState<DonationRecord | null>(null);
+
+  // Handle Escape key
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        resetAndClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -102,8 +118,14 @@ export const GivingModal: React.FC<GivingModalProps> = ({ isOpen, onClose }) => 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#171717]/80 backdrop-blur-xs animate-in fade-in">
-      <div className="bg-white rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl border border-[#E5E5E5] flex flex-col max-h-[92vh] text-left">
+    <div 
+      onClick={resetAndClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#171717]/85 backdrop-blur-xs animate-in fade-in overflow-y-auto"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-2xl sm:rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl border border-[#E5E5E5] flex flex-col max-h-[92vh] text-left my-auto"
+      >
         
         {/* Header */}
         <div className="bg-[#8B0000] text-white p-6 relative">
@@ -114,16 +136,22 @@ export const GivingModal: React.FC<GivingModalProps> = ({ isOpen, onClose }) => 
             <X className="w-4 h-4" />
           </button>
 
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 text-[#FAFAFA] px-2 py-0.5 rounded">
-              Secure Nigerian Fintech Gateway
-            </span>
+          <div className="flex items-center gap-3">
+            <div className="p-1 bg-white rounded-full shrink-0 shadow-xs">
+              <JCCFLogo size={36} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 text-[#FAFAFA] px-2 py-0.5 rounded">
+                  Secure Nigerian Fintech Gateway
+                </span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black font-heading tracking-tight text-white flex items-center gap-2">
+                <span>Kingdom Stewardship Giving</span>
+              </h2>
+            </div>
           </div>
-
-          <h2 className="text-2xl font-black font-heading tracking-tight text-white flex items-center gap-2">
-            <span>Kingdom Stewardship Giving</span>
-          </h2>
-          <p className="text-xs text-white/80 mt-1">
+          <p className="text-xs text-white/80 mt-2">
             Instant direct payments via <strong>OPay</strong>, <strong>PalmPay</strong>, and Verified FUTA Fellowship Accounts.
           </p>
         </div>
@@ -134,8 +162,8 @@ export const GivingModal: React.FC<GivingModalProps> = ({ isOpen, onClose }) => 
           {/* Completed Receipt State */}
           {completedReceipt ? (
             <div className="space-y-5 text-center">
-              <div className="w-16 h-16 rounded-full bg-[#FDECEC] text-[#B5121B] flex items-center justify-center mx-auto border-2 border-[#B5121B]">
-                <Receipt className="w-8 h-8" />
+              <div className="w-16 h-16 rounded-full bg-white p-1 flex items-center justify-center mx-auto border-2 border-[#B5121B] shadow-md">
+                <JCCFLogo size={56} />
               </div>
 
               <div>

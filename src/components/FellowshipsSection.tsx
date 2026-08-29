@@ -31,6 +31,21 @@ export const FellowshipsSection: React.FC<FellowshipsSectionProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // Handle Escape key
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedFellowshipModal(null);
+      }
+    };
+    if (selectedFellowshipModal) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedFellowshipModal]);
+
   const categories = ['All', 'Pentecostal', 'Evangelical', 'Inter-denominational', 'Denominational'];
 
   const filteredFellowships = fellowships.filter((f) => {
@@ -208,8 +223,14 @@ export const FellowshipsSection: React.FC<FellowshipsSectionProps> = ({
 
       {/* Individual Fellowship Detail Modal */}
       {selectedFellowshipModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#171717]/80 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-[#E5E5E5] flex flex-col max-h-[90vh]">
+        <div 
+          onClick={() => setSelectedFellowshipModal(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#171717]/85 backdrop-blur-xs animate-in fade-in overflow-y-auto"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl sm:rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-[#E5E5E5] flex flex-col max-h-[90vh] my-auto"
+          >
             
             {/* Header Image */}
             <div className="h-48 sm:h-56 relative bg-[#171717]">

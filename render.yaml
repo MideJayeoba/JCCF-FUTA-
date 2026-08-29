@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: jccf-futa-app
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: jccf-futa-db
+          property: connectionString
+      - key: SUPERADMIN_EMAIL
+        value: jayeobapeace19459@gmail.com
+
+databases:
+  - name: jccf-futa-db
+    plan: free
+    databaseName: jccf_futa
+    user: jccf_admin

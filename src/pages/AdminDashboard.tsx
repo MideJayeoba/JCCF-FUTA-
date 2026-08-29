@@ -183,6 +183,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
   const [resourceModalMode, setResourceModalMode] = useState<'create' | 'edit' | null>(null);
   const [activeResource, setActiveResource] = useState<Partial<ResourceItem>>({});
 
+  // Global ESC key listener to dismiss open admin modals
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setAnnouncementModalMode(null);
+        setMediaModalMode(null);
+        setPreviewMedia(null);
+        setEventModalMode(null);
+        setFellowshipModalMode(null);
+        setExecutiveModalMode(null);
+        setResourceModalMode(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Donations Filter
   const [donationFilter, setDonationFilter] = useState<'All' | 'OPay' | 'PalmPay' | 'Bank Transfer' | 'Card'>('All');
 
@@ -1926,13 +1943,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
 
       {/* ================= MODAL: CREATE / EDIT ANNOUNCEMENT ================= */}
       {announcementModalMode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#171717]/80 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E5E5] space-y-4 text-left">
-            <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3">
+        <div 
+          onClick={() => setAnnouncementModalMode(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#171717]/85 backdrop-blur-xs animate-in fade-in overflow-y-auto"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E5E5] space-y-4 text-left max-h-[90vh] overflow-y-auto my-auto"
+          >
+            <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3 sticky top-0 bg-white z-10">
               <h3 className="text-base font-bold font-heading text-[#171717]">
                 {announcementModalMode === 'edit' ? 'Edit Bulletin' : 'Create Announcement Bulletin'}
               </h3>
-              <button onClick={() => setAnnouncementModalMode(null)} className="w-8 h-8 rounded-full bg-[#FAFAFA] flex items-center justify-center cursor-pointer">
+              <button 
+                onClick={() => setAnnouncementModalMode(null)} 
+                title="Close modal"
+                className="w-8 h-8 rounded-full bg-[#FAFAFA] hover:bg-[#FDECEC] hover:text-[#B5121B] flex items-center justify-center cursor-pointer transition-colors"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -2023,13 +2050,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
 
       {/* ================= MODAL: CREATE / EDIT MEDIA ================= */}
       {mediaModalMode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#171717]/80 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E5E5] space-y-4 text-left">
-            <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3">
+        <div 
+          onClick={() => setMediaModalMode(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#171717]/85 backdrop-blur-xs animate-in fade-in overflow-y-auto"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E5E5] space-y-4 text-left max-h-[90vh] overflow-y-auto my-auto"
+          >
+            <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3 sticky top-0 bg-white z-10">
               <h3 className="text-base font-bold font-heading text-[#171717]">
                 {mediaModalMode === 'edit' ? 'Edit Sermon / Media Record' : 'Add New Sermon or Broadcast'}
               </h3>
-              <button onClick={() => setMediaModalMode(null)} className="w-8 h-8 rounded-full bg-[#FAFAFA] flex items-center justify-center cursor-pointer">
+              <button 
+                onClick={() => setMediaModalMode(null)} 
+                title="Close modal"
+                className="w-8 h-8 rounded-full bg-[#FAFAFA] hover:bg-[#FDECEC] hover:text-[#B5121B] flex items-center justify-center cursor-pointer transition-colors"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -2199,11 +2236,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
 
       {/* Video Preview Modal */}
       {previewMedia && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#171717]/85 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-[#E5E5E5] space-y-4 text-left">
+        <div 
+          onClick={() => setPreviewMedia(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#171717]/85 backdrop-blur-xs animate-in fade-in overflow-y-auto"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl sm:rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-[#E5E5E5] space-y-4 text-left my-auto"
+          >
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold font-heading text-[#171717]">{previewMedia.title}</h3>
-              <button onClick={() => setPreviewMedia(null)} className="w-8 h-8 rounded-full bg-[#FAFAFA] flex items-center justify-center cursor-pointer">
+              <h3 className="text-base font-bold font-heading text-[#171717] truncate">{previewMedia.title}</h3>
+              <button 
+                onClick={() => setPreviewMedia(null)} 
+                title="Close preview"
+                className="w-8 h-8 rounded-full bg-[#FAFAFA] hover:bg-[#FDECEC] hover:text-[#B5121B] flex items-center justify-center cursor-pointer transition-colors"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -2222,13 +2269,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
 
       {/* ================= MODAL: CREATE / EDIT EVENT ================= */}
       {eventModalMode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#171717]/80 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E5E5] space-y-4 text-left max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3">
+        <div 
+          onClick={() => setEventModalMode(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#171717]/85 backdrop-blur-xs animate-in fade-in overflow-y-auto"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E5E5] space-y-4 text-left max-h-[90vh] overflow-y-auto my-auto"
+          >
+            <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3 sticky top-0 bg-white z-10">
               <h3 className="text-base font-bold font-heading text-[#171717]">
                 {eventModalMode === 'edit' ? 'Edit Fellowship Event' : 'Schedule New Fellowship Event'}
               </h3>
-              <button onClick={() => setEventModalMode(null)} className="w-8 h-8 rounded-full bg-[#FAFAFA] flex items-center justify-center cursor-pointer">
+              <button 
+                onClick={() => setEventModalMode(null)} 
+                title="Close modal"
+                className="w-8 h-8 rounded-full bg-[#FAFAFA] hover:bg-[#FDECEC] hover:text-[#B5121B] flex items-center justify-center cursor-pointer transition-colors"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -2324,13 +2381,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
 
       {/* ================= MODAL: CREATE / EDIT FELLOWSHIP ================= */}
       {fellowshipModalMode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#171717]/80 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E5E5] space-y-4 text-left max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3">
+        <div 
+          onClick={() => setFellowshipModalMode(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#171717]/85 backdrop-blur-xs animate-in fade-in overflow-y-auto"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E5E5] space-y-4 text-left max-h-[90vh] overflow-y-auto my-auto"
+          >
+            <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3 sticky top-0 bg-white z-10">
               <h3 className="text-base font-bold font-heading text-[#171717]">
                 {fellowshipModalMode === 'edit' ? 'Edit Member Fellowship' : 'Register Fellowship'}
               </h3>
-              <button onClick={() => setFellowshipModalMode(null)} className="w-8 h-8 rounded-full bg-[#FAFAFA] flex items-center justify-center cursor-pointer">
+              <button 
+                onClick={() => setFellowshipModalMode(null)} 
+                title="Close modal"
+                className="w-8 h-8 rounded-full bg-[#FAFAFA] hover:bg-[#FDECEC] hover:text-[#B5121B] flex items-center justify-center cursor-pointer transition-colors"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -2446,13 +2513,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
 
       {/* ================= MODAL: CREATE / EDIT EXECUTIVE ================= */}
       {executiveModalMode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#171717]/80 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E5E5] space-y-4 text-left">
-            <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3">
+        <div 
+          onClick={() => setExecutiveModalMode(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#171717]/85 backdrop-blur-xs animate-in fade-in overflow-y-auto"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E5E5] space-y-4 text-left max-h-[90vh] overflow-y-auto my-auto"
+          >
+            <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3 sticky top-0 bg-white z-10">
               <h3 className="text-base font-bold font-heading text-[#171717]">
                 {executiveModalMode === 'edit' ? 'Edit Executive Officer' : 'Add Council Leader'}
               </h3>
-              <button onClick={() => setExecutiveModalMode(null)} className="w-8 h-8 rounded-full bg-[#FAFAFA] flex items-center justify-center cursor-pointer">
+              <button 
+                onClick={() => setExecutiveModalMode(null)} 
+                title="Close modal"
+                className="w-8 h-8 rounded-full bg-[#FAFAFA] hover:bg-[#FDECEC] hover:text-[#B5121B] flex items-center justify-center cursor-pointer transition-colors"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -2528,13 +2605,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
 
       {/* ================= MODAL: CREATE / EDIT RESOURCE ================= */}
       {resourceModalMode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#171717]/80 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E5E5] space-y-4 text-left">
-            <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3">
+        <div 
+          onClick={() => setResourceModalMode(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#171717]/85 backdrop-blur-xs animate-in fade-in overflow-y-auto"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E5E5] space-y-4 text-left max-h-[90vh] overflow-y-auto my-auto"
+          >
+            <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3 sticky top-0 bg-white z-10">
               <h3 className="text-base font-bold font-heading text-[#171717]">
                 {resourceModalMode === 'edit' ? 'Edit Publication / Document' : 'Upload Document / Manual'}
               </h3>
-              <button onClick={() => setResourceModalMode(null)} className="w-8 h-8 rounded-full bg-[#FAFAFA] flex items-center justify-center cursor-pointer">
+              <button 
+                onClick={() => setResourceModalMode(null)} 
+                title="Close modal"
+                className="w-8 h-8 rounded-full bg-[#FAFAFA] hover:bg-[#FDECEC] hover:text-[#B5121B] flex items-center justify-center cursor-pointer transition-colors"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>

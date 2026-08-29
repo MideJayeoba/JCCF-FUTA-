@@ -26,6 +26,21 @@ export const AnnouncementsSection: React.FC<AnnouncementsSectionProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
+  // Handle Escape key
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedAnnouncement(null);
+      }
+    };
+    if (selectedAnnouncement) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedAnnouncement]);
+
   const categories = ['All', 'Official Notice', 'Secretariat', 'Welfare', 'Spiritual', 'Event Alert'];
 
   const filteredAnnouncements = announcements.filter((item) => {
@@ -189,8 +204,14 @@ export const AnnouncementsSection: React.FC<AnnouncementsSectionProps> = ({
 
       {/* Announcement Detail Modal */}
       {selectedAnnouncement && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#171717]/80 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-[#E5E5E5] space-y-4 text-left max-h-[90vh] overflow-y-auto">
+        <div 
+          onClick={() => setSelectedAnnouncement(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#171717]/85 backdrop-blur-xs animate-in fade-in overflow-y-auto"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl sm:rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-[#E5E5E5] space-y-4 text-left max-h-[90vh] overflow-y-auto my-auto"
+          >
             
             <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3">
               <span className="text-[10px] font-black uppercase tracking-wider bg-[#B5121B] text-white px-2.5 py-0.5 rounded">

@@ -1,5 +1,7 @@
 import React from 'react';
 import { HistorySection } from '../components/HistorySection';
+import { PodcastFeature } from '../components/PodcastFeature';
+import { JCCFLogo } from '../components/JCCFLogo';
 import { 
   ShieldCheck, 
   Target, 
@@ -13,7 +15,8 @@ import {
   Users, 
   Radio,
   FileText,
-  HeartHandshake
+  HeartHandshake,
+  Sparkles
 } from 'lucide-react';
 import { NavigationPage } from '../types';
 
@@ -27,7 +30,12 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
       
       {/* Page Hero Header */}
       <div className="bg-white border-b border-[#E5E5E5] py-14 sm:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-5">
+          <div className="flex justify-center">
+            <div className="p-1 rounded-full bg-white shadow-md border border-[#E5E5E5] hover:scale-105 transition-transform duration-300">
+              <JCCFLogo size={90} />
+            </div>
+          </div>
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#FDECEC] text-[#8B0000] text-xs font-bold uppercase tracking-wider border border-[#F8D0D0]">
             <ShieldCheck className="w-3.5 h-3.5 text-[#B5121B]" />
             <span>The Joint Christian Campus Fellowship, FUTA (The Household)</span>
@@ -43,6 +51,9 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
           </div>
         </div>
       </div>
+
+      {/* Featured JCCF Origins Podcast: Pastor Kola & Folien Eniola */}
+      <PodcastFeature videoId="iYdKX5jpYIw" />
 
       {/* Vision & Mission (Articles 1 & 2) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -124,80 +135,115 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
 
       {/* Logo & Emblem Breakdown (Article 1, Section 2) */}
       <div className="py-16 bg-white border-y border-[#E5E5E5]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+          
           <div className="text-center max-w-3xl mx-auto space-y-3">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FDECEC] text-[#8B0000] text-xs font-bold uppercase tracking-wider border border-[#F8D0D0]">
-              <span>Article 1: Section 2</span>
+              <Sparkles className="w-3.5 h-3.5 text-[#B5121B]" />
+              <span>Article 1: Section 2 • The Official Seal</span>
             </div>
             <h2 className="text-2xl sm:text-4xl font-extrabold font-heading text-[#171717]">
               The Meaning of the Logo & Emblem
             </h2>
             <p className="text-xs sm:text-sm text-[#666666]">
-              Every symbol and color in the official JCCF seal represents a foundational spiritual truth.
+              Every symbol and color in the official JCCF seal represents a foundational spiritual covenant.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
-            <div className="p-6 rounded-2xl bg-[#FAFAFA] border border-[#E5E5E5] space-y-2">
-              <div className="w-8 h-8 rounded-lg bg-[#FDECEC] text-[#B5121B] flex items-center justify-center font-bold text-xs">
-                01
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            {/* Center Emblem Showcase (4 cols on large screens) */}
+            <div className="lg:col-span-4 flex flex-col items-center justify-center p-8 bg-[#FAFAFA] rounded-3xl border border-[#E5E5E5] text-center space-y-4 shadow-xs">
+              <div className="p-3 bg-white rounded-full shadow-lg border border-[#E5E5E5] hover:rotate-3 transition-transform duration-300">
+                <JCCFLogo size={180} />
               </div>
-              <h3 className="text-base font-bold text-[#171717]">The Dove</h3>
-              <p className="text-xs sm:text-sm text-[#666666] leading-relaxed">
-                Represents the <strong>SPIRIT OF GOD</strong> leading and directing the affairs of the Household.
-              </p>
+              <div>
+                <h3 className="text-base font-bold font-heading text-[#171717]">
+                  Official Crest of JCCF FUTA
+                </h3>
+                <p className="text-xs text-[#666666] max-w-xs mt-1">
+                  The supreme constitutional emblem of the Joint Christian Campus Fellowship, Federal University of Technology, Akure.
+                </p>
+              </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-[#FAFAFA] border border-[#E5E5E5] space-y-2">
-              <div className="w-8 h-8 rounded-lg bg-[#FDECEC] text-[#B5121B] flex items-center justify-center font-bold text-xs">
-                02
+            {/* The 6 Constitutional Meanings (8 cols) */}
+            <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
+              <div className="p-5 rounded-2xl bg-[#FAFAFA] border border-[#E5E5E5] space-y-1.5 hover:border-[#B5121B]/40 transition-colors">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-md bg-[#FDECEC] text-[#B5121B] flex items-center justify-center font-bold text-[11px]">
+                    01
+                  </div>
+                  <h4 className="text-sm font-bold text-[#171717]">The Dove</h4>
+                </div>
+                <p className="text-xs text-[#666666] leading-relaxed">
+                  Represents the <strong>SPIRIT OF GOD</strong> leading and directing the affairs of the Household.
+                </p>
               </div>
-              <h3 className="text-base font-bold text-[#171717]">The Book</h3>
-              <p className="text-xs sm:text-sm text-[#666666] leading-relaxed">
-                Represents the <strong>WORD OF GOD</strong> as the supreme authority on all matters of faith and doctrine.
-              </p>
+
+              <div className="p-5 rounded-2xl bg-[#FAFAFA] border border-[#E5E5E5] space-y-1.5 hover:border-[#B5121B]/40 transition-colors">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-md bg-[#FDECEC] text-[#B5121B] flex items-center justify-center font-bold text-[11px]">
+                    02
+                  </div>
+                  <h4 className="text-sm font-bold text-[#171717]">The Book</h4>
+                </div>
+                <p className="text-xs text-[#666666] leading-relaxed">
+                  Represents the <strong>WORD OF GOD</strong> as the supreme authority on all matters of faith and doctrine.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-[#FAFAFA] border border-[#E5E5E5] space-y-1.5 hover:border-[#B5121B]/40 transition-colors">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-md bg-[#FDECEC] text-[#B5121B] flex items-center justify-center font-bold text-[11px]">
+                    03
+                  </div>
+                  <h4 className="text-sm font-bold text-[#171717]">The Olive Branch</h4>
+                </div>
+                <p className="text-xs text-[#666666] leading-relaxed">
+                  In the mouth of the Dove, represents <strong>PEACE AND COVENANT REASSURANCE</strong> that the family of God on campus is sheltered from floods.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-[#FAFAFA] border border-[#E5E5E5] space-y-1.5 hover:border-[#B5121B]/40 transition-colors">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-md bg-[#FDECEC] text-[#B5121B] flex items-center justify-center font-bold text-[11px]">
+                    04
+                  </div>
+                  <h4 className="text-sm font-bold text-[#171717]">Green Inner Unbroken Circle</h4>
+                </div>
+                <p className="text-xs text-[#666666] leading-relaxed">
+                  Represents the <strong>ONENESS OF THE TRINITY</strong> and <strong>CONSTANT GROWTH & FRUITFULNESS</strong> across all fellowships.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-[#FAFAFA] border border-[#E5E5E5] space-y-1.5 hover:border-[#B5121B]/40 transition-colors">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-md bg-[#FDECEC] text-[#B5121B] flex items-center justify-center font-bold text-[11px]">
+                    05
+                  </div>
+                  <h4 className="text-sm font-bold text-[#171717]">Red Outer Unbroken Circle</h4>
+                </div>
+                <p className="text-xs text-[#666666] leading-relaxed">
+                  Represents the <strong>BLOOD OF REDEMPTION</strong> through faith in the sacrificial death of our Lord Jesus Christ.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-[#FAFAFA] border border-[#E5E5E5] space-y-1.5 hover:border-[#B5121B]/40 transition-colors">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-md bg-[#FDECEC] text-[#B5121B] flex items-center justify-center font-bold text-[11px]">
+                    06
+                  </div>
+                  <h4 className="text-sm font-bold text-[#171717]">The Yellow Glow & Stars</h4>
+                </div>
+                <p className="text-xs text-[#666666] leading-relaxed">
+                  Represents the <strong>GLORY OF CHRIST</strong> radiating through consecrated believers across the university campus.
+                </p>
+              </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-[#FAFAFA] border border-[#E5E5E5] space-y-2">
-              <div className="w-8 h-8 rounded-lg bg-[#FDECEC] text-[#B5121B] flex items-center justify-center font-bold text-xs">
-                03
-              </div>
-              <h3 className="text-base font-bold text-[#171717]">The Olive Branch</h3>
-              <p className="text-xs sm:text-sm text-[#666666] leading-relaxed">
-                In the mouth of the Dove, represents <strong>PEACE AND COVENANT REASSURANCE</strong>. We trust God that the family of God on campus is protected irrespective of spiritual or physical floods.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-[#FAFAFA] border border-[#E5E5E5] space-y-2">
-              <div className="w-8 h-8 rounded-lg bg-[#FDECEC] text-[#B5121B] flex items-center justify-center font-bold text-xs">
-                04
-              </div>
-              <h3 className="text-base font-bold text-[#171717]">Green Inner Unbroken Circle</h3>
-              <p className="text-xs sm:text-sm text-[#666666] leading-relaxed">
-                Represents the <strong>ONENESS OF THE TRINITY</strong> (Father, Son, and Holy Spirit) translating into the need for the church in FUTA to be one. The green color represents <strong>CONSTANT GROWTH & FRUITFULNESS</strong>.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-[#FAFAFA] border border-[#E5E5E5] space-y-2">
-              <div className="w-8 h-8 rounded-lg bg-[#FDECEC] text-[#B5121B] flex items-center justify-center font-bold text-xs">
-                05
-              </div>
-              <h3 className="text-base font-bold text-[#171717]">Red Outer Unbroken Circle</h3>
-              <p className="text-xs sm:text-sm text-[#666666] leading-relaxed">
-                Represents the <strong>BLOOD OF REDEMPTION</strong> through faith in the sacrificial death of our Lord Jesus Christ.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-[#FAFAFA] border border-[#E5E5E5] space-y-2">
-              <div className="w-8 h-8 rounded-lg bg-[#FDECEC] text-[#B5121B] flex items-center justify-center font-bold text-xs">
-                06
-              </div>
-              <h3 className="text-base font-bold text-[#171717]">The Yellow Glow</h3>
-              <p className="text-xs sm:text-sm text-[#666666] leading-relaxed">
-                Represents the <strong>GLORY OF CHRIST</strong> radiating through consecrated believers across the campus.
-              </p>
-            </div>
           </div>
+
         </div>
       </div>
 
