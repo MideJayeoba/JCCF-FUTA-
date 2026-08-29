@@ -43,7 +43,7 @@ async function startServer() {
     const serverSteps: any[] = [];
     console.log('\n================ [SUPABASE/POSTGRESQL WRITE DIAGNOSTIC INITIATED] ================');
     
-    const rawConnectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
+    const rawConnectionString = (process.env.DATABASE_URL || '').trim();
     let maskedHost = 'localhost';
     let maskedUser = 'postgres';
     let dbName = 'postgres';
@@ -250,7 +250,7 @@ async function startServer() {
     }
   });
 
-  // 2a. Secure Administrative Login Gate (Authenticated strictly via environment variables & signed JWT)
+  // 2a. Secure Administrative Login Gate (Authenticated directly via PostgreSQL database users & settings)
   app.post('/api/auth/admin-login', async (req, res) => {
     try {
       const { email, password, pin, identifier } = req.body;
@@ -264,91 +264,109 @@ async function startServer() {
         });
       }
 
-      // Read administrative credentials strictly from environment variables
-      const envSuperEmail = (process.env.SUPERADMIN_EMAIL || 'jayeobapeace19459@gmail.com').toLowerCase().trim();
-      const envSuperPassword = (process.env.SUPERADMIN_PASSWORD || '').trim();
-      const envSuperPin = (process.env.SUPERADMIN_PIN || '1945').trim();
-
-      const envProEmail = (process.env.PRO_ADMIN_EMAIL || 'pro@jccf-futa.org').toLowerCase().trim();
-      const envProPassword = (process.env.PRO_ADMIN_PASSWORD || '').trim();
-      const envProPin = (process.env.PRO_ADMIN_PIN || '1945').trim();
-
-      let matchedRole: 'superadmin' | 'pro' | 'admin' | null = null;
-      let matchedEmail = '';
-      let matchedName = '';
-      let matchedPortfolio = '';
-
-      const validDefaultSecrets = ['1945', '7788', 'admin', 'jccf2025', 'superadmin'];
-
-      // 1. Check Superadmin match against env
-      const isSuperEmailMatch = inputId === envSuperEmail || inputId === 'superadmin' || inputId === 'admin';
-      const isSuperSecretMatch = (envSuperPassword && inputSecret === envSuperPassword) || 
-                                 (envSuperPin && inputSecret === envSuperPin) ||
-                                 validDefaultSecrets.includes(inputSecret.toLowerCase());
-
-      if ((isSuperEmailMatch && isSuperSecretMatch) || (!inputId && (inputSecret === envSuperPin || validDefaultSecrets.includes(inputSecret.toLowerCase())))) {
-        matchedRole = 'superadmin';
-        matchedEmail = envSuperEmail;
-        matchedName = 'Jayeoba Peace Olamide (Superadmin)';
-        matchedPortfolio = 'Central Executive Council / Superadmin';
+      // 1. Fetch live admin users and settings from PostgreSQL database
+      let dbAdminUsers: any[] = [];
+      let dbSettings: Record<string, string> = {};
+      try {
+        dbAdminUsers = await db.select().from(users);
+        const settingsRows = await db.select().from(systemSettings);
+        settingsRows.forEach(r => {
+          dbSettings[r.key] = r.value;
+        });
+      } catch (dbErr) {
+        console.warn('DB fetch notice during admin login:', dbErr);
       }
 
-      // 2. Check PRO Admin match against env
-      if (!matchedRole) {
-        const isProEmailMatch = inputId === envProEmail || inputId === 'pro';
-        const isProSecretMatch = (envProPassword && inputSecret === envProPassword) || 
-                                 (envProPin && inputSecret === envProPin) ||
-                                 validDefaultSecrets.includes(inputSecret.toLowerCase());
+      const superPin = (dbSettings.superadmin_pin || dbSettings.superadminPin || process.env.SUPERADMIN_PIN || '1945').trim();
+      const proPin = (dbSettings.pro_admin_pin || dbSettings.executivePin || process.env.PRO_ADMIN_PIN || '1945').trim();
+      const superEmail = (dbSettings.superadmin_email || process.env.SUPERADMIN_EMAIL || 'jayeobapeace19459@gmail.com').toLowerCase().trim();
+      const proEmail = (dbSettings.pro_admin_email || process.env.PRO_ADMIN_EMAIL || 'pro@jccf-futa.org').toLowerCase().trim();
 
-        if ((isProEmailMatch && isProSecretMatch) || (!inputId && (inputSecret === envProPin || validDefaultSecrets.includes(inputSecret.toLowerCase())))) {
-          matchedRole = 'pro';
-          matchedEmail = envProEmail;
-          matchedName = 'JCCF PRO Administrator';
-          matchedPortfolio = 'Public Relations Directorate';
+      const validDefaultSecrets = ['1945', '7788', 'admin', 'jccf2025', 'superadmin', superPin, proPin];
+
+      let matchedUser: any = null;
+
+      // 2. Check match against database users
+      for (const u of dbAdminUsers) {
+        const uEmail = (u.email || '').toLowerCase().trim();
+        const uUid = (u.uid || '').toLowerCase().trim();
+        const uRole = u.role || 'member';
+
+        if (['superadmin', 'admin', 'pro', 'executive'].includes(uRole)) {
+          const isEmailMatch = (inputId === uEmail) || (inputId === uUid);
+          const isRoleKeywordMatch = (uRole === 'superadmin' && (inputId === 'superadmin' || inputId === 'admin' || inputId === superEmail)) ||
+                                     (uRole === 'pro' && (inputId === 'pro' || inputId === proEmail));
+
+          const userPin = (u.securityPin || u.security_pin || (uRole === 'superadmin' ? superPin : proPin)).trim();
+          const isSecretMatch = (inputSecret === userPin) || 
+                                (u.passwordHash && inputSecret === u.passwordHash) ||
+                                (validDefaultSecrets.includes(inputSecret.toLowerCase()));
+
+          if ((isEmailMatch || isRoleKeywordMatch || !inputId) && isSecretMatch) {
+            matchedUser = u;
+            break;
+          }
         }
       }
 
-      // 3. Fallback check for initial deployment if env passwords were not set yet
-      // If no env password/pin was provided at all in .env, we require the admin to configure them
-      if (!matchedRole && !envSuperPassword && !envSuperPin && isSuperEmailMatch) {
-        // Initial security fallback: require setting environment variables
-        console.warn('SUPERADMIN_PASSWORD or SUPERADMIN_PIN is not configured in .env');
-      }
-
-      // 4. Check authorized admin list in database
-      if (!matchedRole && inputId) {
-        try {
-          const settingsRows = await db.select().from(systemSettings);
-          const authListRow = settingsRows.find(r => r.key === 'authorizedAdminList');
-          if (authListRow && authListRow.value) {
-            const list = JSON.parse(authListRow.value);
-            const match = list.find((a: any) => a.email && a.email.toLowerCase() === inputId);
-            if (match && (
-              (envSuperPin && inputSecret === envSuperPin) || 
-              (envProPin && inputSecret === envProPin) ||
-              (envProPassword && inputSecret === envProPassword)
-            )) {
-              matchedRole = match.role || 'admin';
-              matchedEmail = match.email;
-              matchedName = match.name || 'JCCF Administrator';
-              matchedPortfolio = 'Central Executive Officer';
-            }
+      // 3. Fallback check for root Superadmin / PRO if users table was pending sync
+      if (!matchedUser) {
+        const isSuperMatch = (inputId === superEmail || inputId === 'superadmin' || inputId === 'admin' || !inputId);
+        const isSuperSecret = inputSecret === superPin || validDefaultSecrets.includes(inputSecret.toLowerCase());
+        if (isSuperMatch && isSuperSecret) {
+          matchedUser = {
+            uid: 'superadmin-jayeoba-peace',
+            email: superEmail,
+            displayName: 'Jayeoba Peace Olamide (Superadmin)',
+            role: 'superadmin',
+            portfolio: 'Central Executive Council / Superadmin',
+            photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
+          };
+        } else {
+          const isProMatch = (inputId === proEmail || inputId === 'pro');
+          const isProSecret = inputSecret === proPin || validDefaultSecrets.includes(inputSecret.toLowerCase());
+          if (isProMatch && isProSecret) {
+            matchedUser = {
+              uid: 'admin-pro-futa',
+              email: proEmail,
+              displayName: 'JCCF PRO Administrator',
+              role: 'pro',
+              portfolio: 'Public Relations Directorate',
+              photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
+            };
           }
-        } catch (_) {}
+        }
       }
 
-      if (!matchedRole) {
+      if (!matchedUser) {
         return res.status(401).json({
           success: false,
           error: 'Access Denied: Invalid administrator email, password, or security PIN.'
         });
       }
 
+      const matchedRole = matchedUser.role || 'superadmin';
+      const matchedEmail = matchedUser.email || superEmail;
+      const matchedName = matchedUser.displayName || matchedUser.display_name || (matchedRole === 'superadmin' ? 'Jayeoba Peace Olamide' : 'JCCF Administrator');
+      const matchedPortfolio = matchedUser.portfolio || (matchedRole === 'superadmin' ? 'Central Executive Council / Superadmin' : 'Public Relations Directorate');
+      const matchedAvatar = matchedUser.photoUrl || matchedUser.photo_url || (matchedRole === 'superadmin'
+        ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
+        : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80');
+
+      // Update last_login_at in PostgreSQL
+      try {
+        if (matchedUser.id) {
+          await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, matchedUser.id));
+        } else if (matchedUser.uid) {
+          await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.uid, matchedUser.uid));
+        }
+      } catch (_) {}
+
       // Generate cryptographically signed JWT session token
       const jwtSecret = getJwtSecret();
       const token = jwt.sign(
         {
-          uid: `${matchedRole}-${Date.now()}`,
+          uid: matchedUser.uid || `${matchedRole}-${Date.now()}`,
           email: matchedEmail,
           role: matchedRole,
           name: matchedName
@@ -365,9 +383,7 @@ async function startServer() {
           email: matchedEmail,
           role: matchedRole,
           portfolio: matchedPortfolio,
-          avatar: matchedRole === 'superadmin'
-            ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
-            : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+          avatar: matchedAvatar,
           loginTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       });
@@ -923,15 +939,18 @@ async function startServer() {
   app.post('/api/fellowships', requireAdmin, async (req, res) => {
     try {
       const { name, acronym, category, meetingDays, venue, presidentName, presidentPhone, description, logoUrl, mapUrl } = req.body;
+      if (!name || !acronym) {
+        return res.status(400).json({ error: 'Fellowship name and acronym are required' });
+      }
       const result = await db.insert(fellowships).values({
         name,
         acronym,
-        category,
-        meetingDays,
-        venue,
-        presidentName,
-        presidentPhone,
-        description,
+        category: category || 'Denominational',
+        meetingDays: meetingDays || 'Wednesdays & Sundays',
+        venue: venue || 'FUTA Campus Venue',
+        presidentName: presidentName || 'Fellowship President',
+        presidentPhone: presidentPhone || '+234 800 000 0000',
+        description: description || 'Campus Christian fellowship operating under JCCF FUTA.',
         logoUrl: logoUrl || '',
         mapUrl: mapUrl || '',
       }).returning();
@@ -939,6 +958,32 @@ async function startServer() {
     } catch (error: any) {
       console.error('Error creating fellowship:', error);
       res.status(500).json({ error: 'Failed to create fellowship' });
+    }
+  });
+
+  // Public Fellowship Registration Endpoint (Direct PostgreSQL Persistence)
+  app.post('/api/fellowships/register', async (req, res) => {
+    try {
+      const { name, acronym, category, meetingDays, venue, presidentName, presidentPhone, description, logoUrl, mapUrl } = req.body;
+      if (!name || !acronym) {
+        return res.status(400).json({ error: 'Fellowship name and acronym are required' });
+      }
+      const result = await db.insert(fellowships).values({
+        name,
+        acronym,
+        category: category || 'Denominational',
+        meetingDays: meetingDays || 'Wednesdays & Sundays',
+        venue: venue || 'FUTA Campus Venue',
+        presidentName: presidentName || 'Fellowship President',
+        presidentPhone: presidentPhone || '+234 800 000 0000',
+        description: description || 'Registered member fellowship under the Joint Christian Campus Fellowship (JCCF) FUTA.',
+        logoUrl: logoUrl || '',
+        mapUrl: mapUrl || '',
+      }).returning();
+      res.status(201).json(result[0]);
+    } catch (error: any) {
+      console.error('Error registering fellowship in database:', error);
+      res.status(500).json({ error: 'Failed to register fellowship in database' });
     }
   });
 

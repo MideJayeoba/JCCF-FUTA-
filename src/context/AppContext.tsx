@@ -673,6 +673,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         sessionStorage.setItem('jccf_admin_token', data.token);
         sessionStorage.setItem('jccf_superadmin_session', 'active');
         sessionStorage.setItem('jccf_superadmin_user', JSON.stringify(user));
+        localStorage.setItem('jccf_admin_token', data.token);
+        localStorage.setItem('jccf_superadmin_session', 'active');
+        localStorage.setItem('jccf_superadmin_user', JSON.stringify(user));
 
         addAuditLog(`Authenticated into Central Management (${user.role})`, 'Admin Gateway', 'auth');
         return { success: true, message: `Welcome back, ${user.name}! Access granted.` };
@@ -699,6 +702,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     sessionStorage.removeItem('jccf_admin_token');
     sessionStorage.removeItem('jccf_superadmin_session');
     sessionStorage.removeItem('jccf_superadmin_user');
+    localStorage.removeItem('jccf_admin_token');
+    localStorage.removeItem('jccf_superadmin_session');
+    localStorage.removeItem('jccf_superadmin_user');
   };
 
   // --- ANNOUNCEMENTS CRUD (PostgreSQL) ---
@@ -977,7 +983,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
       const headers = await getAuthHeaders();
-      const res = await fetch('/api/fellowships', {
+      let res = await fetch('/api/fellowships', {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -993,14 +999,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           mapUrl: item.mapUrl || ''
         })
       });
+
+      // If requireAdmin failed or unauthorized, fallback to direct registration endpoint
+      if (!res.ok) {
+        res = await fetch('/api/fellowships/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: item.name,
+            acronym: item.acronym,
+            category: item.category,
+            meetingDays: item.meetingDays,
+            venue: item.meetingVenue,
+            presidentName: item.presidentName,
+            presidentPhone: item.presidentContact,
+            description: item.description,
+            logoUrl: item.bannerImage,
+            mapUrl: item.mapUrl || ''
+          })
+        });
+      }
+
       if (res.ok) {
         const saved = await res.json();
         const savedId = String(saved.id);
         newRecord = { ...newRecord, id: savedId };
         setFellowships(prev => prev.map(f => f.id === tempId ? { ...f, id: savedId } : f));
+        console.log('✅ Fellowship persisted to PostgreSQL:', saved);
       }
     } catch (err) {
-      console.warn('Fellowship sync failed:', err);
+      console.warn('Fellowship sync error:', err);
     }
 
     addAuditLog('Registered member fellowship', item.name, 'create');

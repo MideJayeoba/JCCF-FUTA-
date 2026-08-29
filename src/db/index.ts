@@ -12,10 +12,10 @@ declare global {
 
 export const createPool = (): pg.Pool => {
   if (!global._postgresPool) {
-    const rawConnectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+    const rawConnectionString = (process.env.DATABASE_URL || '').trim();
 
     if (rawConnectionString) {
-      // Strip search params to prevent pg-connection-string from overriding rejectUnauthorized
+      // Strip any search params that might conflict with node-postgres SSL configuration
       let cleanConnStr = rawConnectionString;
       try {
         const parsed = new URL(rawConnectionString);
@@ -36,15 +36,12 @@ export const createPool = (): pg.Pool => {
         connectionTimeoutMillis: 15000,
       });
     } else {
+      // Fallback local connection when no DATABASE_URL is supplied
       global._postgresPool = new Pool({
-        host: process.env.SQL_HOST || process.env.PGHOST || 'localhost',
-        port: Number(process.env.SQL_PORT || process.env.PGPORT || 5432),
-        user: process.env.SQL_USER || process.env.PGUSER || 'postgres',
-        password: process.env.SQL_PASSWORD || process.env.PGPASSWORD || '',
-        database: process.env.SQL_DB_NAME || process.env.PGDATABASE || 'postgres',
-        ssl: process.env.SQL_SSL === 'true' ? { rejectUnauthorized: false } : false,
-        max: 10,
-        connectionTimeoutMillis: 15000,
+        connectionString: 'postgresql://postgres:postgres@localhost:5432/postgres',
+        ssl: false,
+        max: 5,
+        connectionTimeoutMillis: 5000,
       });
     }
 
@@ -66,6 +63,10 @@ export const initDatabaseTables = async () => {
         display_name TEXT,
         photo_url TEXT,
         role TEXT NOT NULL DEFAULT 'member',
+        portfolio TEXT,
+        security_pin TEXT,
+        password_hash TEXT,
+        phone TEXT,
         created_at TIMESTAMP DEFAULT NOW(),
         last_login_at TIMESTAMP DEFAULT NOW()
       );
@@ -189,6 +190,10 @@ export const initDatabaseTables = async () => {
       );
     `);
     console.log('✅ PostgreSQL database tables initialized successfully.');
+
+    // Seed database with default data if empty
+    const { seedDatabaseIfEmpty } = await import('./seed.ts');
+    await seedDatabaseIfEmpty();
   } catch (err: any) {
     console.warn('PostgreSQL table initialization notice:', err.message);
   }

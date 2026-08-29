@@ -7,7 +7,11 @@ export const users = pgTable('users', {
   email: text('email').notNull(),
   displayName: text('display_name'),
   photoUrl: text('photo_url'),
-  role: text('role').notNull().default('member'), // 'superadmin' | 'admin' | 'executive' | 'member'
+  role: text('role').notNull().default('member'), // 'superadmin' | 'admin' | 'executive' | 'member' | 'pro'
+  portfolio: text('portfolio'),
+  securityPin: text('security_pin'),
+  passwordHash: text('password_hash'),
+  phone: text('phone'),
   createdAt: timestamp('created_at').defaultNow(),
   lastLoginAt: timestamp('last_login_at').defaultNow(),
 });

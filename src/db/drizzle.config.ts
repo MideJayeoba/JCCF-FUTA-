@@ -3,27 +3,15 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-const sqlHost = process.env.SQL_HOST || process.env.PGHOST;
-const sqlDbName = process.env.SQL_DB_NAME || process.env.PGDATABASE;
-const user = process.env.SQL_ADMIN_USER || process.env.SQL_USER || process.env.PGUSER;
-const password = process.env.SQL_ADMIN_PASSWORD || process.env.SQL_PASSWORD || process.env.PGPASSWORD;
+const connectionString = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/postgres";
 
 export default defineConfig({
   schema: "./src/db/schema.ts",
   out: "./drizzle",
   dialect: "postgresql",
   schemaFilter: ["public"],
-  dbCredentials: connectionString
-    ? {
-        url: connectionString,
-      }
-    : {
-        host: sqlHost || "localhost",
-        user: user || "postgres",
-        password: password || "",
-        database: sqlDbName || "postgres",
-        ssl: false,
-      },
+  dbCredentials: {
+    url: connectionString,
+  },
   verbose: true,
 });
