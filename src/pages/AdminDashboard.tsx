@@ -83,6 +83,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
     addMedia,
     updateMedia,
     deleteMedia,
+    fetchYouTubeVideos,
+    isSyncingYouTube,
+    youtubeChannel,
 
     events,
     addEvent,
@@ -130,6 +133,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
   // Login Form States
   const [loginInput, setLoginInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmittingLogin, setIsSubmittingLogin] = useState(false);
   const [loginError, setLoginError] = useState('');
 
   // Navigation Tab
@@ -142,18 +147,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
   const [newAdminRole, setNewAdminRole] = useState<'superadmin' | 'admin' | 'executive'>('admin');
   const [isAddingAdmin, setIsAddingAdmin] = useState(false);
   const [adminActionFeedback, setAdminActionFeedback] = useState('');
-
-  const [superadminPinInput, setSuperadminPinInput] = useState(settings.superadminPin || '778899');
-  const [executivePinInput, setExecutivePinInput] = useState(settings.executivePin || '123456');
-  const [showSuperadminPin, setShowSuperadminPin] = useState(false);
-  const [showExecutivePin, setShowExecutivePin] = useState(false);
-  const [pinActionFeedback, setPinActionFeedback] = useState('');
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (settings.superadminPin) setSuperadminPinInput(settings.superadminPin);
-    if (settings.executivePin) setExecutivePinInput(settings.executivePin);
-  }, [settings.superadminPin, settings.executivePin]);
 
   // Modals - Announcement
   const [announcementModalMode, setAnnouncementModalMode] = useState<'create' | 'edit' | null>(null);
@@ -211,14 +205,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
-    const res = await loginSuperAdmin(loginInput, passwordInput);
-    if (!res.success) {
-      setLoginError(res.message);
+    setIsSubmittingLogin(true);
+    try {
+      const res = await loginSuperAdmin(loginInput, passwordInput);
+      if (!res.success) {
+        setLoginError(res.message);
+      }
+    } finally {
+      setIsSubmittingLogin(false);
     }
-  };
-
-  const handleQuickDemoLogin = async () => {
-    await loginSuperAdmin('778899');
   };
 
   const handleAddAdminSubmit = async (e: React.FormEvent) => {
@@ -246,21 +241,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
     }
   };
 
-  const handleUpdatePinsSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPinActionFeedback('');
-    try {
-      await updateSecurityPins({
-        superadminPin: superadminPinInput.trim(),
-        executivePin: executivePinInput.trim()
-      });
-      setPinActionFeedback('Master & Executive PINs updated and synced with database!');
-      setTimeout(() => setPinActionFeedback(''), 4000);
-    } catch (err: any) {
-      setPinActionFeedback(err.message || 'Failed to update PINs.');
-    }
-  };
-
   const handleCopyEmail = (email: string) => {
     navigator.clipboard.writeText(email);
     setCopiedEmail(email);
@@ -279,19 +259,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
             </div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FDECEC] text-[#8B0000] text-xs font-bold uppercase tracking-wider border border-[#F8D0D0]">
               <Lock className="w-3 h-3 text-[#B5121B]" />
-              <span>Superadmin Authentication</span>
+              <span>Administrative Console</span>
             </div>
             <h1 className="text-2xl font-black font-heading text-[#171717] tracking-tight">
               JCCF Central Console
             </h1>
             <p className="text-xs text-[#666666]">
-              Secure administrative access for FUTA Central Executive Council & Secretariat.
+              Restricted management gateway for authorized JCCF FUTA officers and executives.
             </p>
           </div>
 
           {loginError && (
-            <div className="p-3 bg-[#FDECEC] border border-[#F8D0D0] rounded-xl text-xs font-semibold text-[#8B0000] animate-in fade-in">
-              {loginError}
+            <div className="p-3.5 bg-[#FDECEC] border border-[#F8D0D0] rounded-xl text-xs font-semibold text-[#8B0000] flex items-start gap-2 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0 text-[#B5121B] mt-0.5" />
+              <span>{loginError}</span>
             </div>
           )}
 
@@ -304,23 +285,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                 try {
                   await loginWithGoogle();
                 } catch (err: any) {
-                  setLoginError(err.message || 'Google authentication failed');
+                  setLoginError(err.message || 'Google authentication failed. Please ensure your account is authorized.');
                 }
               }}
               className="w-full py-3 bg-white hover:bg-[#FAFAFA] border-2 border-[#E5E5E5] hover:border-[#B5121B] text-[#171717] font-bold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-3 cursor-pointer shadow-xs"
             >
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
               </svg>
-              <span>Continue with Google (Secure OAuth)</span>
+              <span>Continue with Authorized Google Account</span>
             </button>
 
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-[#E5E5E5]"></div>
-              <span className="text-[10px] uppercase font-bold text-[#999999] tracking-wider">or enter credentials</span>
+              <span className="text-[10px] uppercase font-bold text-[#999999] tracking-wider">or sign in with credentials</span>
               <div className="flex-1 h-px bg-[#E5E5E5]"></div>
             </div>
           </div>
@@ -328,12 +309,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
               <label className="text-xs font-bold text-[#171717] block mb-1">
-                Superadmin PIN or Official Email:
+                Administrator Email or Username:
               </label>
               <input
                 type="text"
                 required
-                placeholder="e.g. 778899 or jayeobapeace19459@gmail.com"
+                placeholder="Enter authorized email or username"
                 value={loginInput}
                 onChange={(e) => setLoginInput(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-[#FAFAFA] border border-[#E5E5E5] rounded-xl text-xs sm:text-sm text-[#171717] focus:ring-2 focus:ring-[#B5121B] focus:outline-none"
@@ -341,12 +322,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
             </div>
 
             <div>
-              <label className="text-xs font-bold text-[#171717] block mb-1">
-                Password / Master Key (If using Email):
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-[#171717]">
+                  Password or Security PIN:
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-[10px] text-[#666666] hover:text-[#171717] font-semibold flex items-center gap-1 cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                  <span>{showPassword ? 'Hide' : 'Show'}</span>
+                </button>
+              </div>
               <input
-                type="password"
-                placeholder="Master Key or leave blank for PIN"
+                type={showPassword ? 'text' : 'password'}
+                required
+                placeholder="Enter your administrative password or PIN"
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-[#FAFAFA] border border-[#E5E5E5] rounded-xl text-xs sm:text-sm text-[#171717] focus:ring-2 focus:ring-[#B5121B] focus:outline-none"
@@ -355,31 +347,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
 
             <button
               type="submit"
-              className="w-full py-3.5 bg-[#B5121B] hover:bg-[#8B0000] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+              disabled={isSubmittingLogin}
+              className="w-full py-3.5 bg-[#B5121B] hover:bg-[#8B0000] disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Lock className="w-3.5 h-3.5" />
-              <span>Verify & Access Superadmin Console</span>
+              <span>{isSubmittingLogin ? 'Verifying Credentials...' : 'Sign In to Admin Console'}</span>
             </button>
           </form>
-
-          {/* Quick Access Helper */}
-          <div className="bg-[#FAFAFA] p-4 rounded-2xl border border-[#E5E5E5] space-y-2 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-[#8B0000]">Quick Superadmin Access:</span>
-              <span className="text-[10px] text-[#666666]">Instant PIN</span>
-            </div>
-            <div className="text-[11px] text-[#666666] space-y-0.5">
-              <div>Master PIN: <strong className="font-mono text-[#171717]">778899</strong></div>
-              <div>Primary Admin: <strong className="font-mono text-[#171717]">jayeobapeace19459@gmail.com</strong></div>
-            </div>
-            <button
-              type="button"
-              onClick={handleQuickDemoLogin}
-              className="w-full py-2 bg-[#FDECEC] hover:bg-[#F8D0D0] text-[#8B0000] font-bold text-xs rounded-lg transition-colors cursor-pointer border border-[#F8D0D0] mt-1"
-            >
-              One-Click Superadmin Login
-            </button>
-          </div>
 
           <div className="text-center pt-2">
             <button
@@ -984,23 +958,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                     </p>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      setActiveMedia({
-                        category: 'Sermon',
-                        duration: '1 hr 15 mins',
-                        date: 'August 2026',
-                        youtubeId: ''
-                      });
-                      setYoutubeUrlInput('');
-                      setYtFetchError(null);
-                      setMediaModalMode('create');
-                    }}
-                    className="px-4 py-2.5 bg-[#B5121B] hover:bg-[#8B0000] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add New Video</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={async () => {
+                        const res = await fetchYouTubeVideos(youtubeChannel || '@jccf_futa');
+                        alert(res.message);
+                      }}
+                      disabled={isSyncingYouTube}
+                      className="px-3.5 py-2.5 bg-white hover:bg-[#FAFAFA] text-[#171717] border border-[#E5E5E5] text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 text-[#B5121B] ${isSyncingYouTube ? 'animate-spin' : ''}`} />
+                      <span>{isSyncingYouTube ? 'Syncing...' : 'Sync YouTube Videos'}</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setActiveMedia({
+                          category: 'Sermon',
+                          duration: '1 hr 15 mins',
+                          date: 'August 2026',
+                          youtubeId: ''
+                        });
+                        setYoutubeUrlInput('');
+                        setYtFetchError(null);
+                        setMediaModalMode('create');
+                      }}
+                      className="px-4 py-2.5 bg-[#B5121B] hover:bg-[#8B0000] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add New Video</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
@@ -1480,12 +1468,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                     <span>{adminActionFeedback}</span>
                   </div>
                 )}
-                {pinActionFeedback && (
-                  <div className="p-3.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-2 animate-in fade-in">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>{pinActionFeedback}</span>
-                  </div>
-                )}
 
                 {/* Public Access Architecture Notice */}
                 <div className="p-4 bg-[#FAFAFA] rounded-2xl border border-[#E5E5E5] flex items-start gap-3">
@@ -1602,7 +1584,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                     </form>
                   </div>
 
-                  {/* Card 2: Master & Executive Security PINs */}
+                  {/* Card 2: Environment Security Governance */}
                   <div className="p-5 bg-white rounded-2xl border border-[#E5E5E5] shadow-xs space-y-4">
                     <div className="flex items-center gap-2 border-b border-[#E5E5E5] pb-3">
                       <div className="w-7 h-7 rounded-lg bg-[#8B0000]/10 text-[#8B0000] flex items-center justify-center">
@@ -1610,85 +1592,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                       </div>
                       <div>
                         <h3 className="text-xs font-black uppercase tracking-wider text-[#171717]">
-                          Security PIN Credentials
+                          Environment-Gated Access Control
                         </h3>
                         <p className="text-[11px] text-[#666666]">
-                          Configure instant emergency PINs for quick council console access.
+                          Primary credentials are isolated in server environment variables for production safety.
                         </p>
                       </div>
                     </div>
 
-                    <form onSubmit={handleUpdatePinsSubmit} className="space-y-3.5 text-xs">
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="font-bold text-[#171717]">Master Superadmin PIN:</label>
-                          <button
-                            type="button"
-                            onClick={() => setShowSuperadminPin(!showSuperadminPin)}
-                            className="text-[10px] text-[#666666] hover:text-[#171717] font-semibold flex items-center gap-1 cursor-pointer"
-                          >
-                            {showSuperadminPin ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                            <span>{showSuperadminPin ? 'Hide PIN' : 'Reveal PIN'}</span>
-                          </button>
-                        </div>
-                        <div className="relative">
-                          <input
-                            type={showSuperadminPin ? 'text' : 'password'}
-                            required
-                            placeholder="e.g. 778899"
-                            value={superadminPinInput}
-                            onChange={(e) => setSuperadminPinInput(e.target.value)}
-                            className="w-full px-3.5 py-2.5 bg-[#FAFAFA] border border-[#E5E5E5] rounded-xl text-xs font-mono font-bold text-[#171717] focus:ring-2 focus:ring-[#B5121B] focus:outline-none tracking-wider"
-                          />
-                          <span className="absolute right-3 top-2.5 text-[10px] font-bold text-[#666666] bg-white px-2 py-0.5 rounded border border-[#E5E5E5]">
-                            Full Superadmin
+                    <div className="space-y-3 text-xs">
+                      <div className="p-3.5 bg-[#FAFAFA] rounded-xl border border-[#E5E5E5] space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-[#171717]">Server Authentication Status:</span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <Check className="w-3 h-3" /> Active & Hardened
                           </span>
                         </div>
+                        <p className="text-[11px] text-[#666666] leading-relaxed">
+                          Master access is bound to server environment variables (<code className="font-mono text-[#B5121B]">SUPERADMIN_EMAIL</code>, <code className="font-mono text-[#B5121B]">SUPERADMIN_PIN</code>, <code className="font-mono text-[#B5121B]">SUPERADMIN_PASSWORD</code>, <code className="font-mono text-[#B5121B]">JWT_SECRET</code>). No plain-text passwords or master keys are exposed over public endpoints.
+                        </p>
                       </div>
 
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="font-bold text-[#171717]">Executive Council Officer PIN:</label>
-                          <button
-                            type="button"
-                            onClick={() => setShowExecutivePin(!showExecutivePin)}
-                            className="text-[10px] text-[#666666] hover:text-[#171717] font-semibold flex items-center gap-1 cursor-pointer"
-                          >
-                            {showExecutivePin ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                            <span>{showExecutivePin ? 'Hide PIN' : 'Reveal PIN'}</span>
-                          </button>
+                      <div className="p-3.5 bg-[#FDECEC]/50 rounded-xl border border-[#F8D0D0] space-y-1.5 text-[11px] text-[#8B0000]">
+                        <div className="font-bold flex items-center gap-1.5">
+                          <ShieldCheck className="w-3.5 h-3.5 text-[#B5121B]" />
+                          <span>Google OAuth Delegation</span>
                         </div>
-                        <div className="relative">
-                          <input
-                            type={showExecutivePin ? 'text' : 'password'}
-                            required
-                            placeholder="e.g. 123456"
-                            value={executivePinInput}
-                            onChange={(e) => setExecutivePinInput(e.target.value)}
-                            className="w-full px-3.5 py-2.5 bg-[#FAFAFA] border border-[#E5E5E5] rounded-xl text-xs font-mono font-bold text-[#171717] focus:ring-2 focus:ring-[#B5121B] focus:outline-none tracking-wider"
-                          />
-                          <span className="absolute right-3 top-2.5 text-[10px] font-bold text-[#666666] bg-white px-2 py-0.5 rounded border border-[#E5E5E5]">
-                            Council Officers
-                          </span>
-                        </div>
+                        <p className="text-[#666666]">
+                          Add executive officers in the directory below. Once authorized, they can log into the administration console using their verified Google identity without needing shared passwords.
+                        </p>
                       </div>
-
-                      <div className="p-3 bg-[#FAFAFA] rounded-xl text-[11px] text-[#666666] space-y-1 border border-[#E5E5E5]">
-                        <div className="font-bold text-[#171717] flex items-center gap-1">
-                          <Lock className="w-3 h-3 text-[#8B0000]" />
-                          <span>Instant PIN Usage:</span>
-                        </div>
-                        <p>Officers can enter either PIN directly in the admin login gateway without requiring a password or Google OAuth.</p>
-                      </div>
-
-                      <button
-                        type="submit"
-                        className="w-full py-3 bg-[#171717] hover:bg-[#333333] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
-                      >
-                        <Save className="w-3.5 h-3.5" />
-                        <span>Update Security PINs in Database</span>
-                      </button>
-                    </form>
+                    </div>
                   </div>
 
                 </div>
@@ -1819,21 +1753,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                   <div className="p-4 bg-[#FAFAFA] rounded-2xl border border-[#E5E5E5] space-y-3">
                     <h3 className="text-xs font-black uppercase tracking-wider text-[#8B0000] flex items-center gap-1.5">
                       <Lock className="w-3.5 h-3.5" />
-                      <span>Superadmin Security Credentials</span>
+                      <span>Administrative Contact Settings</span>
                     </h3>
                     
                     <div>
-                      <label className="text-xs font-bold text-[#171717] block mb-1">Master Superadmin PIN:</label>
-                      <input
-                        type="text"
-                        value={tempSettings.superadminPin}
-                        onChange={(e) => setTempSettings({ ...tempSettings, superadminPin: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-white border border-[#E5E5E5] rounded-xl text-xs font-mono font-bold text-[#171717] focus:ring-2 focus:ring-[#B5121B] focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-[#171717] block mb-1">Superadmin Official Email:</label>
+                      <label className="text-xs font-bold text-[#171717] block mb-1">Central Secretariat Contact Email:</label>
                       <input
                         type="email"
                         value={tempSettings.superadminEmail}

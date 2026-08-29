@@ -2,14 +2,159 @@ import { MediaItem } from '../types';
 
 export const MEDIA_RECORDS: MediaItem[] = [
   {
+    id: 'yt-CsK_tJUPe2s',
+    title: 'HAND OVER SERVICE AND FYB THANKSGIVING || COME UP HITHER',
+    description: 'Annual Joint Christian Campus Fellowship (JCCF FUTA) Hand Over Service and Final Year Brethren (FYB) Thanksgiving service themed "Come Up Hither".',
+    youtubeId: 'CsK_tJUPe2s',
+    category: 'Mega Service',
+    minister: 'JCCF FUTA Central Executive',
+    date: 'Recent Stream',
+    thumbnail: 'https://img.youtube.com/vi/CsK_tJUPe2s/hqdefault.jpg',
+    duration: '2 hr 45 mins',
+    views: '1.4K views'
+  },
+  {
+    id: 'yt-CjPmVAGTxa0',
+    title: "TEACHING WEEK '26 | KNOWING GOD; THE PREREQUISITE FOR DOING EXPLOIT | DAY 7",
+    description: 'Day 7 Grand Finale of Teaching Week 2026 at JCCF FUTA. Experience deep revelation and impartation on knowing God for kingdom exploits on campus.',
+    youtubeId: 'CjPmVAGTxa0',
+    category: 'Sermon',
+    minister: 'JCCF FUTA',
+    date: 'Teaching Week 2026',
+    thumbnail: 'https://img.youtube.com/vi/CjPmVAGTxa0/hqdefault.jpg',
+    duration: '2 hr 15 mins',
+    views: '2.1K views'
+  },
+  {
+    id: 'yt-qIZ5Ors3Op0',
+    title: "TEACHING WEEK '26 | KNOWING GOD; THE PREREQUISITE FOR DOING EXPLOIT | DAY 5",
+    description: 'Day 5 Teaching Week session focusing on spiritual authority, intimate discipleship, and academic excellence in God.',
+    youtubeId: 'qIZ5Ors3Op0',
+    category: 'Sermon',
+    minister: 'JCCF FUTA',
+    date: 'Teaching Week 2026',
+    thumbnail: 'https://img.youtube.com/vi/qIZ5Ors3Op0/hqdefault.jpg',
+    duration: '1 hr 55 mins',
+    views: '1.8K views'
+  },
+  {
+    id: 'yt-Sy1Hd53o2Ng',
+    title: "TEACHING WEEK '26 | KNOWING GOD; THE PREREQUISITE FOR DOING EXPLOIT | DAY 4",
+    description: 'Day 4 of Teaching Week 2026 at the Federal University of Technology, Akure.',
+    youtubeId: 'Sy1Hd53o2Ng',
+    category: 'Sermon',
+    minister: 'JCCF FUTA',
+    date: 'Teaching Week 2026',
+    thumbnail: 'https://img.youtube.com/vi/Sy1Hd53o2Ng/hqdefault.jpg',
+    duration: '1 hr 40 mins',
+    views: '1.2K views'
+  },
+  {
+    id: 'yt-cVsHrjgXa60',
+    title: "TEACHING WEEK '26 | KNOWING GOD; THE PREREQUISITE FOR DOING EXPLOIT | DAY 3",
+    description: 'Day 3 Teaching Week session broadcast live from the JCCF fellowship auditorium.',
+    youtubeId: 'cVsHrjgXa60',
+    category: 'Sermon',
+    minister: 'JCCF FUTA',
+    date: 'Teaching Week 2026',
+    thumbnail: 'https://img.youtube.com/vi/cVsHrjgXa60/hqdefault.jpg',
+    duration: '1 hr 35 mins',
+    views: '980 views'
+  },
+  {
+    id: 'yt-b5RfR5jUrB0',
+    title: "TEACHING WEEK '26 | KNOWING GOD; THE PREREQUISITE FOR DOING EXPLOIT | DAY 2",
+    description: 'Day 2 of Teaching Week 2026 deep word exposition and corporate worship.',
+    youtubeId: 'b5RfR5jUrB0',
+    category: 'Sermon',
+    minister: 'JCCF FUTA',
+    date: 'Teaching Week 2026',
+    thumbnail: 'https://img.youtube.com/vi/b5RfR5jUrB0/hqdefault.jpg',
+    duration: '1 hr 45 mins',
+    views: '1.1K views'
+  },
+  {
+    id: 'yt-yQhTAOx2qFw',
+    title: "TEACHING WEEK '26 | KNOWING GOD; THE PREREQUISITE FOR DOING EXPLOIT | DAY 1",
+    description: 'Opening Day 1 of Teaching Week 2026 setting the spiritual foundation for the academic session.',
+    youtubeId: 'yQhTAOx2qFw',
+    category: 'Sermon',
+    minister: 'JCCF FUTA',
+    date: 'Teaching Week 2026',
+    thumbnail: 'https://img.youtube.com/vi/yQhTAOx2qFw/hqdefault.jpg',
+    duration: '2 hr 05 mins',
+    views: '2.5K views'
+  },
+  {
     id: 'jccf-origins-podcast-kola-folien',
     title: 'How JCCF Started — Exclusive Conversation with Pastor Kola & Folien Eniola',
-    description: 'An inspiring and revelatory deep dive into the birth, foundational prayer covenants, and historic emergence of the Joint Christian Campus Fellowship (JCCF) at the Federal University of Technology, Akure (FUTA). Hear firsthand testimonies of how the vision was received and cultivated.',
+    description: 'An inspiring and revelatory deep dive into the birth, foundational prayer covenants, and historic emergence of the Joint Christian Campus Fellowship (JCCF) at FUTA.',
     youtubeId: 'iYdKX5jpYIw',
     category: 'Podcast',
     minister: 'Pastor Kola & Folien Eniola',
     date: 'Household Archives',
     thumbnail: 'https://img.youtube.com/vi/iYdKX5jpYIw/hqdefault.jpg',
-    duration: 'Special Episode'
+    duration: 'Special Episode',
+    views: '3.4K views'
+  },
+  {
+    id: 'yt-m9awLvk_bn8',
+    title: "JCCF FUTA || WORKER'S RETREAT || WHO CAN SEEK THE LORD? || 6TH DECEMBER, 2025",
+    description: "Spiritual leadership retreat for all JCCF service unit executives and fellowship workers across FUTA campus.",
+    youtubeId: 'm9awLvk_bn8',
+    category: 'Seminar',
+    minister: 'JCCF FUTA Leadership',
+    date: 'Dec 6, 2025',
+    thumbnail: 'https://img.youtube.com/vi/m9awLvk_bn8/hqdefault.jpg',
+    duration: '2 hr 10 mins',
+    views: '1.6K views'
+  },
+  {
+    id: 'yt-rIxw54th1m8',
+    title: 'Day 7 (Grand Finale) | 7-Day Online Prayer | Teaching Week 2026',
+    description: 'Grand Finale corporate intercession and warfare prayer stream ahead of Teaching Week 2026.',
+    youtubeId: 'rIxw54th1m8',
+    category: 'Prayer',
+    minister: 'JCCF FUTA Prayer Band',
+    date: 'Online Prayer 2026',
+    thumbnail: 'https://img.youtube.com/vi/rIxw54th1m8/hqdefault.jpg',
+    duration: '1 hr 15 mins',
+    views: '890 views'
+  },
+  {
+    id: 'yt-GYRvtMRlJAk',
+    title: "JCCF FUTA || TEACHING WEEK'25 DAY 5 || THE MAN OF HIS RIGHT HAND (MEN AS THRONES)",
+    description: "The Man of His Right Hand — Men as Thrones. Powerful apostolic teaching from Teaching Week 2025.",
+    youtubeId: 'GYRvtMRlJAk',
+    category: 'Sermon',
+    minister: 'JCCF FUTA',
+    date: 'Jul 25, 2025',
+    thumbnail: 'https://img.youtube.com/vi/GYRvtMRlJAk/hqdefault.jpg',
+    duration: '2 hr 27 mins',
+    views: '1.9K views'
+  },
+  {
+    id: 'yt-_csR1NrYoiY',
+    title: "JCCF FUTA || TEACHING WEEK'25 DAY 4 || THE MAN OF HIS RIGHT HAND (MEN AS THRONES)",
+    description: "Teaching Week 2025 Day 4 teaching series broadcast live from Akure.",
+    youtubeId: '_csR1NrYoiY',
+    category: 'Sermon',
+    minister: 'JCCF FUTA',
+    date: 'Jul 25, 2025',
+    thumbnail: 'https://img.youtube.com/vi/_csR1NrYoiY/hqdefault.jpg',
+    duration: '1 hr 10 mins',
+    views: '1.1K views'
+  },
+  {
+    id: 'yt-oyArfm0O8ys',
+    title: 'CHOIR CONCERT 2.0 🔥 At the Name of JESUS || JCCF Mass Choir',
+    description: 'High praise and heartfelt adoration concert ministrations by the Joint Christian Campus Fellowship Mass Choir.',
+    youtubeId: 'oyArfm0O8ys',
+    category: 'Mega Praise',
+    minister: 'JCCF Mass Choir',
+    date: 'Jul 25, 2025',
+    thumbnail: 'https://img.youtube.com/vi/oyArfm0O8ys/hqdefault.jpg',
+    duration: 'Special Concert',
+    views: '2.8K views'
   }
 ];

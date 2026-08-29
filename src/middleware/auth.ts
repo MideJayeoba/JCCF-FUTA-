@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 import { adminAuth } from '../lib/firebase-admin.ts';
 import { DecodedIdToken } from 'firebase-admin/auth';
 import { db } from '../db/index.ts';
@@ -10,75 +11,53 @@ export interface AuthRequest extends Request {
   userRole?: string;
 }
 
+export const getJwtSecret = (): string => {
+  return process.env.JWT_SECRET || process.env.SESSION_SECRET || 'jccf-futa-secure-admin-secret-key-2026';
+};
+
 export const requireAuth = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
   const authHeader = req.headers.authorization;
-  const adminPinHeader = req.headers['x-admin-pin'] as string | undefined;
-  const adminSessionHeader = req.headers['x-admin-session'] as string | undefined;
-  const adminEmailHeader = (req.headers['x-admin-email'] as string | undefined)?.toLowerCase().trim();
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized: Administrative authentication required' });
+  }
+
+  const token = authHeader.split('Bearer ')[1]?.trim();
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized: Missing authentication token' });
+  }
 
   const envSuperEmail = (process.env.SUPERADMIN_EMAIL || 'jayeobapeace19459@gmail.com').toLowerCase().trim();
   const envProEmail = (process.env.PRO_ADMIN_EMAIL || 'pro@jccf-futa.org').toLowerCase().trim();
-  const envSuperPin = process.env.SUPERADMIN_PIN;
-  const envProPin = process.env.PRO_ADMIN_PIN;
 
-  // 1. Check for Admin PIN / Master Session direct authorization
-  if (adminPinHeader || adminSessionHeader === 'active' || (authHeader && authHeader.startsWith('Bearer pin-'))) {
-    try {
-      const settingsRows = await db.select().from(systemSettings);
-      const superPinRow = settingsRows.find(r => r.key === 'superadminPin');
-      const execPinRow = settingsRows.find(r => r.key === 'executivePin');
-      const superPin = envSuperPin || superPinRow?.value || '778899';
-      const proPin = envProPin || execPinRow?.value || '123456';
-
-      const providedPin = adminPinHeader || (authHeader && authHeader.startsWith('Bearer pin-') ? authHeader.replace('Bearer pin-', '') : '');
-
-      if (
-        (providedPin && (providedPin === superPin || providedPin === envSuperPin)) ||
-        (adminSessionHeader === 'active' && (!adminEmailHeader || adminEmailHeader === envSuperEmail))
-      ) {
-        req.userRole = 'superadmin';
-        req.user = {
-          uid: 'superadmin-session',
-          email: adminEmailHeader || envSuperEmail,
-          name: 'Peace Jayeoba (Superadmin)',
-        };
-        return next();
-      }
-
-      if (
-        (providedPin && (providedPin === proPin || providedPin === envProPin)) ||
-        (adminSessionHeader === 'active' && adminEmailHeader === envProEmail)
-      ) {
-        req.userRole = 'pro';
-        req.user = {
-          uid: 'pro-session',
-          email: adminEmailHeader || envProEmail,
-          name: 'JCCF PRO Administrator',
-        };
-        return next();
-      }
-    } catch (dbErr) {
-      console.warn('Error reading systemSettings in requireAuth PIN check:', dbErr);
+  // 1. Verify if token is a signed JWT from our server-side /api/auth/admin-login
+  try {
+    const decoded = jwt.verify(token, getJwtSecret()) as any;
+    if (decoded && decoded.role) {
+      req.user = {
+        uid: decoded.uid || 'admin-jwt-session',
+        email: decoded.email,
+        name: decoded.name || 'JCCF Administrator',
+      };
+      req.userRole = decoded.role;
+      return next();
     }
+  } catch (jwtErr) {
+    // Not a valid JWT or expired, try Firebase Auth token below
   }
 
-  // 2. Check for Firebase Bearer Token
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized: Admin credentials required' });
-  }
-
-  const token = authHeader.split('Bearer ')[1];
+  // 2. Verify if token is a Firebase Google ID Token
   try {
     const decodedToken = await adminAuth.verifyIdToken(token);
     req.user = decodedToken;
 
     const userEmail = (decodedToken.email || '').toLowerCase().trim();
 
-    // Only allow Superadmin, PRO Admin, or emails explicitly authorized in settings
+    // Query DB for authorized administrator list
     const configuredAuthorizedEmails: string[] = [envSuperEmail, envProEmail];
     const roleMap: Record<string, string> = { 
       [envSuperEmail]: 'superadmin',
@@ -96,7 +75,7 @@ export const requireAuth = async (
               if (item && item.email) {
                 const em = item.email.toLowerCase().trim();
                 configuredAuthorizedEmails.push(em);
-                roleMap[em] = item.role || 'pro';
+                roleMap[em] = item.role || 'admin';
               }
             });
           }
@@ -112,45 +91,45 @@ export const requireAuth = async (
 
     if (!isAuthorized) {
       return res.status(403).json({ 
-        error: 'Forbidden: Sign-in is restricted strictly to the JCCF Central Executive Superadmin and authorized JCCF PRO.' 
+        error: 'Forbidden: Access restricted strictly to authorized JCCF administrators.' 
       });
     }
 
-    const assignedRole = isPrimaryAdmin ? 'superadmin' : (roleMap[userEmail] || 'pro');
+    const assignedRole = isPrimaryAdmin ? 'superadmin' : (roleMap[userEmail] || 'admin');
 
     // Sync user record in database
-    const dbUsers = await db.select().from(users).where(eq(users.uid, decodedToken.uid));
-    let role = assignedRole;
-
-    if (dbUsers.length > 0) {
-      if (dbUsers[0].role !== assignedRole) {
-        await db.update(users).set({ role: assignedRole, lastLoginAt: new Date() }).where(eq(users.uid, decodedToken.uid));
-      }
-      role = assignedRole;
-    } else {
-      await db.insert(users).values({
-        uid: decodedToken.uid,
-        email: decodedToken.email || '',
-        displayName: decodedToken.name || '',
-        photoUrl: decodedToken.picture || '',
-        role: assignedRole,
-      }).onConflictDoUpdate({
-        target: users.uid,
-        set: {
+    try {
+      const dbUsers = await db.select().from(users).where(eq(users.uid, decodedToken.uid));
+      if (dbUsers.length > 0) {
+        if (dbUsers[0].role !== assignedRole) {
+          await db.update(users).set({ role: assignedRole, lastLoginAt: new Date() }).where(eq(users.uid, decodedToken.uid));
+        }
+      } else {
+        await db.insert(users).values({
+          uid: decodedToken.uid,
           email: decodedToken.email || '',
           displayName: decodedToken.name || '',
           photoUrl: decodedToken.picture || '',
           role: assignedRole,
-          lastLoginAt: new Date(),
-        }
-      });
+        }).onConflictDoUpdate({
+          target: users.uid,
+          set: {
+            email: decodedToken.email || '',
+            displayName: decodedToken.name || '',
+            photoUrl: decodedToken.picture || '',
+            role: assignedRole,
+            lastLoginAt: new Date(),
+          }
+        });
+      }
+    } catch (syncErr) {
+      console.warn('Could not sync user role to database:', syncErr);
     }
 
-    req.userRole = role;
-    next();
-  } catch (error) {
-    console.error('Error verifying Admin ID token:', error);
-    return res.status(401).json({ error: 'Unauthorized: Invalid administrative authentication session' });
+    req.userRole = assignedRole;
+    return next();
+  } catch (firebaseErr) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid or expired administrative session' });
   }
 };
 

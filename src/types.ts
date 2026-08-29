@@ -80,7 +80,7 @@ export interface Announcement {
 export interface MediaItem {
   id: string;
   title: string;
-  category: 'Sermon' | 'Mega Praise' | 'Worship' | 'Seminar' | 'Podcast';
+  category: 'Sermon' | 'Mega Praise' | 'Worship' | 'Seminar' | 'Podcast' | 'Mega Service' | 'Prayer' | string;
   duration: string;
   date: string;
   minister: string;

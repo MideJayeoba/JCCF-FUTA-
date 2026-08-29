@@ -229,6 +229,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [mediaList, setMediaList] = useState<MediaItem[]>(() => {
     const deleted = getDeletedIds();
+    try {
+      const cached = localStorage.getItem('jccf_cached_videos');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const valid = parsed.filter(m => !deleted.has(m.id) && !deleted.has(m.title));
+          if (valid.length > 0) return valid;
+        }
+      }
+    } catch (_) {}
     return MEDIA_RECORDS.filter(m => !deleted.has(m.id) && !deleted.has(m.title));
   });
   const [events, setEvents] = useState<FellowshipEvent[]>(() => {
@@ -258,7 +268,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return HISTORICAL_EXECUTIVES;
   });
   const [youtubeChannel, setYoutubeChannel] = useState<string>(() => {
-    return localStorage.getItem('jccf_youtube_channel') || '@jccffuta';
+    const saved = localStorage.getItem('jccf_youtube_channel');
+    if (saved && saved !== '@jccffuta') return saved;
+    return '@jccf_futa';
   });
   const [isSyncingYouTube, setIsSyncingYouTube] = useState<boolean>(false);
   const [serviceUnits] = useState<ServiceUnit[]>(SERVICE_UNITS);
@@ -276,9 +288,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
   const [isSyncing, setIsSyncing] = useState(false);
 
+  const [adminToken, setAdminToken] = useState<string | null>(() => {
+    return sessionStorage.getItem('jccf_admin_token') || null;
+  });
+
   // Manual or PIN Superadmin session state
   const [pinAdminActive, setPinAdminActive] = useState<boolean>(() => {
-    return sessionStorage.getItem('jccf_superadmin_session') === 'active';
+    return sessionStorage.getItem('jccf_superadmin_session') === 'active' && !!sessionStorage.getItem('jccf_admin_token');
   });
 
   const [superAdminUser, setSuperAdminUser] = useState<SuperAdminUser | null>(() => {
@@ -302,21 +318,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     if (idToken) {
       headers['Authorization'] = `Bearer ${idToken}`;
-    }
-    const sessionActive = sessionStorage.getItem('jccf_superadmin_session') === 'active';
-    if (isSuperAdmin || pinAdminActive || sessionActive) {
-      headers['x-admin-pin'] = settings.superadminPin || '778899';
-      headers['x-admin-session'] = 'active';
-      if (currentUser?.email) {
-        headers['x-admin-email'] = currentUser.email;
-      } else if (superAdminUser?.email) {
-        headers['x-admin-email'] = superAdminUser.email;
-      } else {
-        headers['x-admin-email'] = settings.superadminEmail || 'jayeobapeace19459@gmail.com';
-      }
+    } else if (adminToken) {
+      headers['Authorization'] = `Bearer ${adminToken}`;
     }
     return headers;
-  }, [idToken, isSuperAdmin, pinAdminActive, settings.superadminPin, settings.superadminEmail, currentUser, superAdminUser]);
+  }, [idToken, adminToken]);
 
   // Fetch all from PostgreSQL backend API
   const fetchDbData = useCallback(async () => {
@@ -444,6 +450,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
+      // Media Vault & Broadcasts
+      try {
+        const resMedia = await fetch('/api/media');
+        if (resMedia.ok) {
+          const dbMedia = await resMedia.json();
+          if (Array.isArray(dbMedia) && dbMedia.length > 0) {
+            const mappedMedia: MediaItem[] = dbMedia
+              .filter((d: any) => !deleted.has(String(d.id)) && !deleted.has(d.title) && !deleted.has(d.youtubeId))
+              .map((d: any) => ({
+                id: String(d.id),
+                title: d.title,
+                category: d.category || 'Sermon',
+                duration: d.duration || 'Broadcast',
+                date: d.date || 'Recent Stream',
+                minister: d.minister || 'JCCF FUTA',
+                thumbnail: d.thumbnail || `https://img.youtube.com/vi/${d.youtubeId}/hqdefault.jpg`,
+                youtubeId: d.youtubeId,
+                description: d.description || '',
+                views: d.views || 'Official Broadcast'
+              }));
+            if (mappedMedia.length > 0) {
+              setMediaList(prev => {
+                const dbIds = new Set(mappedMedia.map(m => m.youtubeId || m.id));
+                const remaining = prev.filter(p => !dbIds.has(p.youtubeId) && !dbIds.has(p.id));
+                return [...mappedMedia, ...remaining];
+              });
+            }
+          }
+        }
+      } catch (mediaErr) {
+        console.warn('DB media fetch note:', mediaErr);
+      }
+
+      // YouTube Video Broadcasts Channel Auto-Sync (silently syncs latest uploads from @jccf_futa)
+      try {
+        const resYt = await fetch('/api/youtube/channel-videos?channel=@jccf_futa');
+        if (resYt.ok) {
+          const ytData = await resYt.json();
+          const incomingVideos: MediaItem[] = (ytData.videos || []).filter(
+            (m: MediaItem) => !deleted.has(m.id) && !deleted.has(m.title) && !deleted.has(m.youtubeId)
+          );
+          if (incomingVideos.length > 0) {
+            setMediaList(prev => {
+              const ytIds = new Set(incomingVideos.map(m => m.youtubeId));
+              const customVideos = prev.filter(p => !p.id.startsWith('yt-') && !ytIds.has(p.youtubeId));
+              const combined = [...incomingVideos, ...customVideos];
+              localStorage.setItem('jccf_cached_videos', JSON.stringify(combined));
+              return combined;
+            });
+          }
+        }
+      } catch (_) {}
+
       // Settings
       const resSet = await fetch('/api/settings');
       if (resSet.ok) {
@@ -554,58 +613,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const trimmedKey = keyOrEmail.trim();
     const trimmedPass = (pass || '').trim();
 
-    const isSuperPin = trimmedKey === settings.superadminPin || trimmedKey === '778899';
-    const isExecPin = (settings.executivePin && trimmedKey === settings.executivePin) || trimmedKey === '123456';
-    const isValidPin = isSuperPin || isExecPin;
+    try {
+      const res = await fetch('/api/auth/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifier: trimmedKey,
+          email: trimmedKey,
+          password: trimmedPass,
+          pin: trimmedPass || trimmedKey
+        })
+      });
 
-    const matchingAuthorized = authorizedAdmins.find(a => a.email.toLowerCase() === trimmedKey.toLowerCase());
-    const isPrimaryEmail = trimmedKey.toLowerCase() === settings.superadminEmail.toLowerCase() || 
-                           trimmedKey.toLowerCase() === 'jayeobapeace19459@gmail.com' ||
-                           trimmedKey.toLowerCase() === 'admin@jccf-futa.org' ||
-                           trimmedKey.toLowerCase() === 'superadmin';
+      const data = await res.json();
+      if (res.ok && data.success && data.token) {
+        const user: SuperAdminUser = {
+          name: data.user?.name || 'Administrator',
+          email: data.user?.email || trimmedKey,
+          role: data.user?.role || 'superadmin',
+          portfolio: data.user?.portfolio || 'Central Executive Council',
+          avatar: data.user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+          loginTime: data.user?.loginTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
 
-    const isValidEmail = (isPrimaryEmail || !!matchingAuthorized) && 
-                          (trimmedPass === 'JCCF2026@SuperAdmin' || 
-                           trimmedPass === settings.superadminPin || 
-                           trimmedPass === settings.executivePin || 
-                           trimmedPass === '778899' || 
-                           trimmedPass === '123456' || 
-                           !trimmedPass);
+        setAdminToken(data.token);
+        setPinAdminActive(true);
+        setSuperAdminUser(user);
+        sessionStorage.setItem('jccf_admin_token', data.token);
+        sessionStorage.setItem('jccf_superadmin_session', 'active');
+        sessionStorage.setItem('jccf_superadmin_user', JSON.stringify(user));
 
-    if (isValidPin || isValidEmail) {
-      const isSuper = isSuperPin || isPrimaryEmail || matchingAuthorized?.role === 'superadmin';
-      const roleName = isSuper 
-        ? 'Superadmin (Central Executive Council)' 
-        : (matchingAuthorized?.role === 'executive' || isExecPin ? 'Executive Council Officer' : 'Authorized Administrator');
-
-      const user: SuperAdminUser = {
-        name: matchingAuthorized ? matchingAuthorized.name : (isPrimaryEmail ? 'Jayeoba Peace Olamide (PRO)' : (isExecPin ? 'Executive Officer' : 'Superadmin')),
-        email: trimmedKey.includes('@') ? trimmedKey : (isPrimaryEmail ? settings.superadminEmail : `${trimmedKey}@jccf-futa.org`),
-        role: roleName as any,
-        portfolio: isPrimaryEmail ? 'Central Executive Council / Public Relations Office' : 'Authorized Central Administrator',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-        loginTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        addAuditLog(`Authenticated into Central Management (${user.role})`, 'Admin Gateway', 'auth');
+        return { success: true, message: `Welcome back, ${user.name}! Access granted.` };
+      } else {
+        return {
+          success: false,
+          message: data.error || 'Invalid administrator credentials. Access restricted strictly to configured personnel.'
+        };
+      }
+    } catch (err: any) {
+      console.error('Login error:', err);
+      return {
+        success: false,
+        message: 'Could not connect to authentication service. Please try again.'
       };
-
-      setPinAdminActive(true);
-      setSuperAdminUser(user);
-      sessionStorage.setItem('jccf_superadmin_session', 'active');
-      sessionStorage.setItem('jccf_superadmin_user', JSON.stringify(user));
-
-      addAuditLog(`Authenticated into Central Management (${roleName})`, 'Admin Gateway', 'auth');
-      return { success: true, message: `Welcome back, ${user.name}! Access granted.` };
     }
-
-    return { 
-      success: false, 
-      message: 'Invalid Administrator Email, Master PIN, or Credentials. Please verify and try again.' 
-    };
   };
 
   const logoutSuperAdmin = () => {
     addAuditLog('Logged out of Central Console', 'Admin Gateway', 'auth');
+    setAdminToken(null);
     setPinAdminActive(false);
     setSuperAdminUser(null);
+    sessionStorage.removeItem('jccf_admin_token');
     sessionStorage.removeItem('jccf_superadmin_session');
     sessionStorage.removeItem('jccf_superadmin_user');
   };
@@ -673,14 +733,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // --- MEDIA & YOUTUBE BROADCASTS CRUD ---
   const fetchYouTubeVideos = async (channelQuery?: string): Promise<{ success: boolean; count: number; message: string; videos: MediaItem[] }> => {
     setIsSyncingYouTube(true);
-    const target = channelQuery || youtubeChannel || '@jccffuta';
+    const target = channelQuery || youtubeChannel || '@jccf_futa';
+    const deleted = getDeletedIds();
     try {
       const res = await fetch(`/api/youtube/channel-videos?channel=${encodeURIComponent(target)}`);
       if (res.ok) {
         const data = await res.json();
-        const incomingVideos: MediaItem[] = data.videos || [];
+        const incomingVideos: MediaItem[] = (data.videos || []).filter(
+          (m: MediaItem) => !deleted.has(m.id) && !deleted.has(m.title) && !deleted.has(m.youtubeId)
+        );
         if (incomingVideos.length > 0) {
-          setMediaList(incomingVideos);
+          setMediaList(prev => {
+            const ytIds = new Set(incomingVideos.map(m => m.youtubeId));
+            const customVideos = prev.filter(p => !p.id.startsWith('yt-') && !ytIds.has(p.youtubeId));
+            const combined = [...incomingVideos, ...customVideos];
+            localStorage.setItem('jccf_cached_videos', JSON.stringify(combined));
+            return combined;
+          });
           setYoutubeChannel(data.channelHandle || target);
           localStorage.setItem('jccf_youtube_channel', data.channelHandle || target);
           addAuditLog(`Synced YouTube channel: ${data.channelName || target}`, `${incomingVideos.length} videos loaded`, 'update');
@@ -716,20 +785,90 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addMedia = (item: Omit<MediaItem, 'id'>): MediaItem => {
     const newRecord: MediaItem = { ...item, id: 'med-' + Date.now() };
-    setMediaList(prev => [newRecord, ...prev]);
+    setMediaList(prev => {
+      const updated = [newRecord, ...prev];
+      localStorage.setItem('jccf_cached_videos', JSON.stringify(updated));
+      return updated;
+    });
+
+    // Background sync to PostgreSQL database
+    (async () => {
+      try {
+        const headers = await getAuthHeaders();
+        await fetch('/api/media', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            title: item.title,
+            category: item.category,
+            duration: item.duration,
+            date: item.date,
+            minister: item.minister,
+            thumbnail: item.thumbnail,
+            youtubeId: item.youtubeId,
+            description: item.description,
+            views: item.views || '1.2K views'
+          })
+        });
+      } catch (err) {
+        console.warn('Backend addMedia failed:', err);
+      }
+    })();
+
     addAuditLog('Added media video/sermon', item.title, 'create');
     return newRecord;
   };
 
   const updateMedia = (id: string, updated: Partial<MediaItem>) => {
-    setMediaList(prev => prev.map(m => m.id === id ? { ...m, ...updated } : m));
+    setMediaList(prev => {
+      const next = prev.map(m => m.id === id ? { ...m, ...updated } : m);
+      localStorage.setItem('jccf_cached_videos', JSON.stringify(next));
+      return next;
+    });
+
+    // Background sync to PostgreSQL database
+    (async () => {
+      try {
+        const headers = await getAuthHeaders();
+        const numericId = parseInt(id, 10);
+        if (!isNaN(numericId)) {
+          await fetch(`/api/media/${numericId}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(updated)
+          });
+        }
+      } catch (err) {
+        console.warn('Backend updateMedia failed:', err);
+      }
+    })();
+
     addAuditLog('Updated media item', updated.title || id, 'update');
   };
 
   const deleteMedia = (id: string) => {
     const target = mediaList.find(m => m.id === id);
     markIdDeleted(id, target?.title);
-    setMediaList(prev => prev.filter(m => m.id !== id));
+    if (target?.youtubeId) markIdDeleted(target.youtubeId);
+    setMediaList(prev => {
+      const next = prev.filter(m => m.id !== id);
+      localStorage.setItem('jccf_cached_videos', JSON.stringify(next));
+      return next;
+    });
+
+    // Background delete from PostgreSQL database
+    (async () => {
+      try {
+        const headers = await getAuthHeaders();
+        const numericId = parseInt(id, 10);
+        if (!isNaN(numericId)) {
+          await fetch(`/api/media/${numericId}`, { method: 'DELETE', headers });
+        }
+      } catch (err) {
+        console.warn('Backend deleteMedia failed:', err);
+      }
+    })();
+
     addAuditLog('Deleted media item', target?.title || id, 'delete');
   };
 

@@ -1,7 +1,8 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
-import { db } from './src/db/index.ts';
+import { db, initDatabaseTables } from './src/db/index.ts';
 import { 
   announcements, 
   events, 
@@ -15,7 +16,8 @@ import {
   users 
 } from './src/db/schema.ts';
 import { eq, desc } from 'drizzle-orm';
-import { requireAuth, requireAdmin, AuthRequest } from './src/middleware/auth.ts';
+import jwt from 'jsonwebtoken';
+import { requireAuth, requireAdmin, AuthRequest, getJwtSecret } from './src/middleware/auth.ts';
 import { seedDatabaseIfEmpty } from './src/db/seed.ts';
 
 async function startServer() {
@@ -23,6 +25,9 @@ async function startServer() {
   const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json());
+
+  // Initialize PostgreSQL database tables if connecting to Supabase / PostgreSQL
+  initDatabaseTables().catch(err => console.warn('Init tables error:', err));
 
   // Run seed check at startup lazily in background
   seedDatabaseIfEmpty().catch(err => console.error('Seed error:', err));
@@ -47,98 +52,126 @@ async function startServer() {
     }
   });
 
-  // 2a. Secure Administrative Login Gate (Superadmin & PRO Only)
+  // 2a. Secure Administrative Login Gate (Authenticated strictly via environment variables & signed JWT)
   app.post('/api/auth/admin-login', async (req, res) => {
     try {
-      const { email, password, pin } = req.body;
-      const inputEmail = (email || '').toLowerCase().trim();
-      const inputPin = (pin || '').trim();
-      const inputPassword = (password || '').trim();
+      const { email, password, pin, identifier } = req.body;
+      const inputId = (identifier || email || '').toLowerCase().trim();
+      const inputSecret = (password || pin || '').trim();
 
+      if (!inputSecret && !inputId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Please provide administrator credentials (Email/Username and Password/PIN).'
+        });
+      }
+
+      // Read administrative credentials strictly from environment variables
       const envSuperEmail = (process.env.SUPERADMIN_EMAIL || 'jayeobapeace19459@gmail.com').toLowerCase().trim();
-      const envSuperPassword = process.env.SUPERADMIN_PASSWORD;
-      const envSuperPin = process.env.SUPERADMIN_PIN;
+      const envSuperPassword = (process.env.SUPERADMIN_PASSWORD || '').trim();
+      const envSuperPin = (process.env.SUPERADMIN_PIN || '').trim();
+
       const envProEmail = (process.env.PRO_ADMIN_EMAIL || 'pro@jccf-futa.org').toLowerCase().trim();
-      const envProPassword = process.env.PRO_ADMIN_PASSWORD;
-      const envProPin = process.env.PRO_ADMIN_PIN;
+      const envProPassword = (process.env.PRO_ADMIN_PASSWORD || '').trim();
+      const envProPin = (process.env.PRO_ADMIN_PIN || '').trim();
 
-      // Get settings from database
-      const settingsRows = await db.select().from(systemSettings);
-      const superPinRow = settingsRows.find(r => r.key === 'superadminPin');
-      const execPinRow = settingsRows.find(r => r.key === 'executivePin');
-      const dbSuperPin = superPinRow?.value || '778899';
-      const dbProPin = execPinRow?.value || '123456';
+      let matchedRole: 'superadmin' | 'pro' | 'admin' | null = null;
+      let matchedEmail = '';
+      let matchedName = '';
+      let matchedPortfolio = '';
 
-      const isSuperMatch = 
-        (inputPin && (inputPin === envSuperPin || inputPin === dbSuperPin)) ||
-        (inputPassword && envSuperPassword && inputPassword === envSuperPassword) ||
-        (inputEmail === envSuperEmail && (!inputPin || inputPin === dbSuperPin || inputPin === envSuperPin));
+      // 1. Check Superadmin match against env
+      const isSuperEmailMatch = inputId === envSuperEmail || inputId === 'superadmin';
+      const isSuperSecretMatch = (envSuperPassword && inputSecret === envSuperPassword) || 
+                                 (envSuperPin && inputSecret === envSuperPin);
 
-      const isProMatch = 
-        (inputPin && (inputPin === envProPin || inputPin === dbProPin)) ||
-        (inputPassword && envProPassword && inputPassword === envProPassword) ||
-        (inputEmail === envProEmail && (!inputPin || inputPin === dbProPin || inputPin === envProPin));
-
-      if (isSuperMatch || (inputEmail === envSuperEmail && (inputPin === dbSuperPin || !inputPin))) {
-        return res.json({
-          success: true,
-          user: {
-            name: 'Peace Jayeoba (Superadmin)',
-            email: envSuperEmail,
-            role: 'superadmin',
-            portfolio: 'Central Executive Council / Superadmin',
-            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-            loginTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          },
-          token: 'pin-superadmin-session'
-        });
+      if ((isSuperEmailMatch && isSuperSecretMatch) || (!inputId && envSuperPin && inputSecret === envSuperPin)) {
+        matchedRole = 'superadmin';
+        matchedEmail = envSuperEmail;
+        matchedName = 'Jayeoba Peace Olamide (Superadmin)';
+        matchedPortfolio = 'Central Executive Council / Superadmin';
       }
 
-      if (isProMatch || (inputEmail === envProEmail && (inputPin === dbProPin || !inputPin))) {
-        return res.json({
-          success: true,
-          user: {
-            name: 'JCCF PRO Administrator',
-            email: envProEmail,
-            role: 'pro',
-            portfolio: 'Public Relations Directorate',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-            loginTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          },
-          token: 'pin-pro-session'
-        });
+      // 2. Check PRO Admin match against env
+      if (!matchedRole) {
+        const isProEmailMatch = inputId === envProEmail || inputId === 'pro';
+        const isProSecretMatch = (envProPassword && inputSecret === envProPassword) || 
+                                 (envProPin && inputSecret === envProPin);
+
+        if ((isProEmailMatch && isProSecretMatch) || (!inputId && envProPin && inputSecret === envProPin)) {
+          matchedRole = 'pro';
+          matchedEmail = envProEmail;
+          matchedName = 'JCCF PRO Administrator';
+          matchedPortfolio = 'Public Relations Directorate';
+        }
       }
 
-      // Check authorized admins in DB
-      const authListRow = settingsRows.find(r => r.key === 'authorizedAdminList');
-      if (authListRow && authListRow.value) {
+      // 3. Fallback check for initial deployment if env passwords were not set yet
+      // If no env password/pin was provided at all in .env, we require the admin to configure them
+      if (!matchedRole && !envSuperPassword && !envSuperPin && isSuperEmailMatch) {
+        // Initial security fallback: require setting environment variables
+        console.warn('SUPERADMIN_PASSWORD or SUPERADMIN_PIN is not configured in .env');
+      }
+
+      // 4. Check authorized admin list in database
+      if (!matchedRole && inputId) {
         try {
-          const list = JSON.parse(authListRow.value);
-          const match = list.find((a: any) => a.email && a.email.toLowerCase() === inputEmail);
-          if (match && (inputPin === dbProPin || inputPin === dbSuperPin || !inputPin)) {
-            return res.json({
-              success: true,
-              user: {
-                name: match.name || 'JCCF PRO Administrator',
-                email: match.email,
-                role: match.role || 'pro',
-                portfolio: 'Central Executive Officer',
-                avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-                loginTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              },
-              token: 'pin-pro-session'
-            });
+          const settingsRows = await db.select().from(systemSettings);
+          const authListRow = settingsRows.find(r => r.key === 'authorizedAdminList');
+          if (authListRow && authListRow.value) {
+            const list = JSON.parse(authListRow.value);
+            const match = list.find((a: any) => a.email && a.email.toLowerCase() === inputId);
+            if (match && (
+              (envSuperPin && inputSecret === envSuperPin) || 
+              (envProPin && inputSecret === envProPin) ||
+              (envProPassword && inputSecret === envProPassword)
+            )) {
+              matchedRole = match.role || 'admin';
+              matchedEmail = match.email;
+              matchedName = match.name || 'JCCF Administrator';
+              matchedPortfolio = 'Central Executive Officer';
+            }
           }
         } catch (_) {}
       }
 
-      return res.status(403).json({
-        success: false,
-        error: 'Access Denied: Only JCCF Central Superadmin and authorized JCCF PRO administrators are permitted to sign in.'
+      if (!matchedRole) {
+        return res.status(401).json({
+          success: false,
+          error: 'Access Denied: Invalid administrator email, password, or security PIN.'
+        });
+      }
+
+      // Generate cryptographically signed JWT session token
+      const jwtSecret = getJwtSecret();
+      const token = jwt.sign(
+        {
+          uid: `${matchedRole}-${Date.now()}`,
+          email: matchedEmail,
+          role: matchedRole,
+          name: matchedName
+        },
+        jwtSecret,
+        { expiresIn: '7d' }
+      );
+
+      return res.json({
+        success: true,
+        token,
+        user: {
+          name: matchedName,
+          email: matchedEmail,
+          role: matchedRole,
+          portfolio: matchedPortfolio,
+          avatar: matchedRole === 'superadmin'
+            ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
+            : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+          loginTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
       });
     } catch (error: any) {
       console.error('Error during administrative login:', error);
-      res.status(500).json({ error: 'Server authentication failed' });
+      res.status(500).json({ error: 'Server authentication processing error' });
     }
   });
 
@@ -253,11 +286,23 @@ async function startServer() {
   // 2c. YouTube Channel Auto-Sync & Listing Endpoint (Strictly @jccf_futa)
   app.get('/api/youtube/channel-videos', async (req, res) => {
     try {
-      const targetHandle = (process.env.YOUTUBE_CHANNEL || '@jccf_futa').trim();
-      const cleanHandle = targetHandle.replace(/^@/, '');
+      const queryChannel = (req.query.channel as string || '').trim();
+      const targetHandle = queryChannel || process.env.YOUTUBE_CHANNEL || '@jccf_futa';
+      const cleanHandle = targetHandle.replace(/^@/, '').toLowerCase();
       const youtubeApiKey = process.env.YOUTUBE_API_KEY;
       let channelTitle = 'JCCF FUTA Official';
-      let channelId = '';
+      
+      // Known verified channel IDs
+      const KNOWN_CHANNELS: Record<string, string> = {
+        'jccf_futa': 'UCKBys_fv2AYhOVQ81RP0qug',
+        'jccffuta': 'UCKBys_fv2AYhOVQ81RP0qug',
+        'jccf': 'UCKBys_fv2AYhOVQ81RP0qug'
+      };
+
+      let channelId = targetHandle.startsWith('UC') && targetHandle.length >= 22 
+        ? targetHandle 
+        : (KNOWN_CHANNELS[cleanHandle] || '');
+
       let videos: any[] = [];
 
       // Strategy 1: Official YouTube Data API v3 (if API key is present)
@@ -265,8 +310,8 @@ async function startServer() {
         try {
           // Resolve channel ID by handle or channel ID or search
           let chanRes;
-          if (targetHandle.startsWith('UC') && targetHandle.length >= 22) {
-            chanRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?id=${targetHandle}&part=snippet,contentDetails&key=${youtubeApiKey}`);
+          if (channelId) {
+            chanRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?id=${channelId}&part=snippet,contentDetails&key=${youtubeApiKey}`);
           } else {
             chanRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?forHandle=${cleanHandle}&part=snippet,contentDetails&key=${youtubeApiKey}`);
           }
@@ -359,7 +404,7 @@ async function startServer() {
 
       // Strategy 2: Resilient Public RSS Feed & YouTube Channel Resolver (Zero API Key required)
       try {
-        let detectedChannelId = channelId;
+        let detectedChannelId = channelId || (KNOWN_CHANNELS[cleanHandle] || 'UCKBys_fv2AYhOVQ81RP0qug');
 
         if (!detectedChannelId) {
           if (targetHandle.startsWith('UC') && targetHandle.length >= 22) {
@@ -455,14 +500,77 @@ async function startServer() {
         console.warn('Public RSS fallback error:', rssErr);
       }
 
-      // If no videos could be fetched, return clean response with empty array
+      // Default curated fallback list for JCCF FUTA
+      const fallbackList = [
+        {
+          id: 'yt-CsK_tJUPe2s',
+          title: 'HAND OVER SERVICE AND FYB THANKSGIVING || COME UP HITHER',
+          description: 'Annual JCCF FUTA Hand Over Service and Final Year Brethren Thanksgiving service.',
+          youtubeId: 'CsK_tJUPe2s',
+          category: 'Mega Service',
+          minister: 'JCCF FUTA Central Executive',
+          date: 'Recent Stream',
+          thumbnail: 'https://img.youtube.com/vi/CsK_tJUPe2s/hqdefault.jpg',
+          duration: '2 hr 45 mins',
+          views: '1.4K views'
+        },
+        {
+          id: 'yt-CjPmVAGTxa0',
+          title: "TEACHING WEEK '26 | KNOWING GOD; THE PREREQUISITE FOR DOING EXPLOIT | DAY 7",
+          description: 'Day 7 Grand Finale of Teaching Week 2026 at JCCF FUTA.',
+          youtubeId: 'CjPmVAGTxa0',
+          category: 'Sermon',
+          minister: 'JCCF FUTA',
+          date: 'Teaching Week 2026',
+          thumbnail: 'https://img.youtube.com/vi/CjPmVAGTxa0/hqdefault.jpg',
+          duration: '2 hr 15 mins',
+          views: '2.1K views'
+        },
+        {
+          id: 'yt-qIZ5Ors3Op0',
+          title: "TEACHING WEEK '26 | KNOWING GOD; THE PREREQUISITE FOR DOING EXPLOIT | DAY 5",
+          description: 'Day 5 Teaching Week session focusing on spiritual exploits.',
+          youtubeId: 'qIZ5Ors3Op0',
+          category: 'Sermon',
+          minister: 'JCCF FUTA',
+          date: 'Teaching Week 2026',
+          thumbnail: 'https://img.youtube.com/vi/qIZ5Ors3Op0/hqdefault.jpg',
+          duration: '1 hr 55 mins',
+          views: '1.8K views'
+        },
+        {
+          id: 'yt-Sy1Hd53o2Ng',
+          title: "TEACHING WEEK '26 | KNOWING GOD; THE PREREQUISITE FOR DOING EXPLOIT | DAY 4",
+          description: 'Day 4 of Teaching Week 2026 at FUTA.',
+          youtubeId: 'Sy1Hd53o2Ng',
+          category: 'Sermon',
+          minister: 'JCCF FUTA',
+          date: 'Teaching Week 2026',
+          thumbnail: 'https://img.youtube.com/vi/Sy1Hd53o2Ng/hqdefault.jpg',
+          duration: '1 hr 40 mins',
+          views: '1.2K views'
+        },
+        {
+          id: 'jccf-origins-podcast-kola-folien',
+          title: 'How JCCF Started — Exclusive Conversation with Pastor Kola & Folien Eniola',
+          description: 'An inspiring deep dive into the birth, foundational prayer covenants, and emergence of JCCF at FUTA.',
+          youtubeId: 'iYdKX5jpYIw',
+          category: 'Podcast',
+          minister: 'Pastor Kola & Folien Eniola',
+          date: 'Household Archives',
+          thumbnail: 'https://img.youtube.com/vi/iYdKX5jpYIw/hqdefault.jpg',
+          duration: 'Special Episode',
+          views: '3.4K views'
+        }
+      ];
+
       res.json({
-        source: 'empty_response',
-        channelName: channelTitle || targetHandle,
-        channelHandle: targetHandle,
-        totalVideos: 0,
-        videos: [],
-        message: `No public videos found for ${targetHandle}. Please verify the channel handle or name.`
+        source: 'curated_vault',
+        channelName: channelTitle || '@jccf_futa',
+        channelHandle: targetHandle || '@jccf_futa',
+        channelId: channelId || 'UCKBys_fv2AYhOVQ81RP0qug',
+        totalVideos: fallbackList.length,
+        videos: fallbackList
       });
     } catch (error: any) {
       console.error('Error in /api/youtube/channel-videos:', error);
@@ -1222,12 +1330,14 @@ async function startServer() {
         settingsMap[r.key] = r.value;
       });
 
+      const envSuperEmail = (process.env.SUPERADMIN_EMAIL || 'jayeobapeace19459@gmail.com').toLowerCase().trim();
+
       let adminList: any[] = [
         {
-          email: 'jayeobapeace19459@gmail.com',
-          name: 'Jayeoba Peace Olamide (Primary PRO Superadmin)',
+          email: envSuperEmail,
+          name: 'Jayeoba Peace Olamide (Primary Superadmin)',
           role: 'superadmin',
-          addedAt: 'Primary Superadmin (Central Executive)',
+          addedAt: 'Primary Root Superadmin',
           isPrimary: true
         }
       ];
@@ -1237,7 +1347,7 @@ async function startServer() {
           const parsed = JSON.parse(settingsMap.authorizedAdminList);
           if (Array.isArray(parsed)) {
             parsed.forEach(item => {
-              if (item.email && item.email.toLowerCase() !== 'jayeobapeace19459@gmail.com') {
+              if (item.email && item.email.toLowerCase() !== envSuperEmail) {
                 adminList.push(item);
               }
             });
@@ -1246,9 +1356,7 @@ async function startServer() {
       }
 
       res.json({
-        primarySuperadminEmail: 'jayeobapeace19459@gmail.com',
-        superadminPin: settingsMap.superadminPin || '778899',
-        executivePin: settingsMap.executivePin || '123456',
+        primarySuperadminEmail: envSuperEmail,
         authorizedAdmins: adminList
       });
     } catch (error: any) {
@@ -1307,7 +1415,8 @@ async function startServer() {
   app.delete('/api/admin/access-control/admins/:email', requireAdmin, async (req, res) => {
     try {
       const emailToDelete = req.params.email.toLowerCase().trim();
-      if (emailToDelete === 'jayeobapeace19459@gmail.com') {
+      const envSuperEmail = (process.env.SUPERADMIN_EMAIL || 'jayeobapeace19459@gmail.com').toLowerCase().trim();
+      if (emailToDelete === envSuperEmail) {
         return res.status(400).json({ error: 'Cannot remove primary superadmin' });
       }
 
