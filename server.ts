@@ -17,20 +17,31 @@ import {
 } from './src/db/schema.ts';
 import { eq, desc } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import { requireAuth, requireAdmin, AuthRequest, getJwtSecret } from './src/middleware/auth.ts';
-import { seedDatabaseIfEmpty } from './src/db/seed.ts';
 
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
+  // Warn loudly if the deployment is still relying on built-in default credentials/secrets.
+  const insecureConfig: string[] = [];
+  if (!process.env.JWT_SECRET && !process.env.SESSION_SECRET) insecureConfig.push('JWT_SECRET');
+  if (!process.env.SUPERADMIN_PIN) insecureConfig.push('SUPERADMIN_PIN');
+  if (!process.env.PRO_ADMIN_PIN) insecureConfig.push('PRO_ADMIN_PIN');
+  if (insecureConfig.length) {
+    const msg = `⚠️  Using built-in default(s) for: ${insecureConfig.join(', ')}. Set these env vars before production.`;
+    if (process.env.NODE_ENV === 'production') {
+      console.error(msg);
+    } else {
+      console.warn(msg);
+    }
+  }
+
   app.use(express.json());
 
   // Initialize PostgreSQL database tables if connecting to Supabase / PostgreSQL
   initDatabaseTables().catch(err => console.warn('Init tables error:', err));
-
-  // Run seed check at startup lazily in background
-  seedDatabaseIfEmpty().catch(err => console.error('Seed error:', err));
 
   // 1. Health check
   app.get('/api/health', (req, res) => {
@@ -257,10 +268,10 @@ async function startServer() {
       const inputId = (identifier || email || '').toLowerCase().trim();
       const inputSecret = (password || pin || '').trim();
 
-      if (!inputSecret && !inputId) {
+      if (!inputSecret || !inputId) {
         return res.status(400).json({
           success: false,
-          error: 'Please provide administrator credentials (Email/Username and Password/PIN).'
+          error: 'Please provide both an administrator email/username and a password/PIN.'
         });
       }
 
@@ -282,38 +293,40 @@ async function startServer() {
       const superEmail = (dbSettings.superadmin_email || process.env.SUPERADMIN_EMAIL || 'jayeobapeace19459@gmail.com').toLowerCase().trim();
       const proEmail = (dbSettings.pro_admin_email || process.env.PRO_ADMIN_EMAIL || 'pro@jccf-futa.org').toLowerCase().trim();
 
-      const validDefaultSecrets = ['1945', '7788', 'admin', 'jccf2025', 'superadmin', superPin, proPin];
+      // Verifies the supplied secret against a stored bcrypt hash first, then a plain security PIN.
+      const secretMatches = async (candidate: string, passwordHash?: string | null, securityPin?: string | null): Promise<boolean> => {
+        if (passwordHash) {
+          try {
+            if (await bcrypt.compare(candidate, passwordHash)) return true;
+          } catch (_) { /* malformed hash — fall through to PIN */ }
+        }
+        return Boolean(securityPin) && candidate === String(securityPin).trim();
+      };
 
       let matchedUser: any = null;
+      let identityHasAdminRow = false;
 
-      // 2. Check match against database users
+      // 2. Match strictly on a known identity (email or uid) + that account's own credential.
       for (const u of dbAdminUsers) {
         const uEmail = (u.email || '').toLowerCase().trim();
         const uUid = (u.uid || '').toLowerCase().trim();
         const uRole = u.role || 'member';
 
-        if (['superadmin', 'admin', 'pro', 'executive'].includes(uRole)) {
-          const isEmailMatch = (inputId === uEmail) || (inputId === uUid);
-          const isRoleKeywordMatch = (uRole === 'superadmin' && (inputId === 'superadmin' || inputId === 'admin' || inputId === superEmail)) ||
-                                     (uRole === 'pro' && (inputId === 'pro' || inputId === proEmail));
+        if (!['superadmin', 'admin', 'executive', 'pro'].includes(uRole)) continue;
+        if (inputId !== uEmail && inputId !== uUid) continue;
 
-          const userPin = (u.securityPin || u.security_pin || (uRole === 'superadmin' ? superPin : proPin)).trim();
-          const isSecretMatch = (inputSecret === userPin) || 
-                                (u.passwordHash && inputSecret === u.passwordHash) ||
-                                (validDefaultSecrets.includes(inputSecret.toLowerCase()));
-
-          if ((isEmailMatch || isRoleKeywordMatch || !inputId) && isSecretMatch) {
-            matchedUser = u;
-            break;
-          }
+        identityHasAdminRow = true;
+        if (await secretMatches(inputSecret, u.passwordHash, u.securityPin || u.security_pin)) {
+          matchedUser = u;
+          break;
         }
       }
 
-      // 3. Fallback check for root Superadmin / PRO if users table was pending sync
-      if (!matchedUser) {
-        const isSuperMatch = (inputId === superEmail || inputId === 'superadmin' || inputId === 'admin' || !inputId);
-        const isSuperSecret = inputSecret === superPin || validDefaultSecrets.includes(inputSecret.toLowerCase());
-        if (isSuperMatch && isSuperSecret) {
+      // 3. Fallback for root Superadmin / PRO ONLY when that identity has no admin row yet
+      //    (users table not seeded / not reachable). If the row exists, a wrong secret in
+      //    step 2 must fail here too — never fall through to the bootstrap PIN.
+      if (!matchedUser && !identityHasAdminRow) {
+        if (inputId === superEmail && inputSecret === superPin) {
           matchedUser = {
             uid: 'superadmin-jayeoba-peace',
             email: superEmail,
@@ -322,19 +335,15 @@ async function startServer() {
             portfolio: 'Central Executive Council / Superadmin',
             photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
           };
-        } else {
-          const isProMatch = (inputId === proEmail || inputId === 'pro');
-          const isProSecret = inputSecret === proPin || validDefaultSecrets.includes(inputSecret.toLowerCase());
-          if (isProMatch && isProSecret) {
-            matchedUser = {
-              uid: 'admin-pro-futa',
-              email: proEmail,
-              displayName: 'JCCF PRO Administrator',
-              role: 'pro',
-              portfolio: 'Public Relations Directorate',
-              photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
-            };
-          }
+        } else if (inputId === proEmail && inputSecret === proPin) {
+          matchedUser = {
+            uid: 'admin-futa',
+            email: proEmail,
+            displayName: 'JCCF Administrator',
+            role: 'admin',
+            portfolio: 'Administrative Directorate',
+            photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
+          };
         }
       }
 

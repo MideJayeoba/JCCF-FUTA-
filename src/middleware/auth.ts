@@ -11,8 +11,17 @@ export interface AuthRequest extends Request {
   userRole?: string;
 }
 
+const DEV_JWT_FALLBACK = 'jccf-futa-insecure-dev-secret-change-me';
+
 export const getJwtSecret = (): string => {
-  return process.env.JWT_SECRET || process.env.SESSION_SECRET || 'jccf-futa-secure-admin-secret-key-2026';
+  const secret = process.env.JWT_SECRET || process.env.SESSION_SECRET;
+  if (secret) return secret;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'JWT_SECRET (or SESSION_SECRET) must be set in production. Refusing to issue or verify tokens with a built-in default.'
+    );
+  }
+  return DEV_JWT_FALLBACK;
 };
 
 export const requireAuth = async (
@@ -61,7 +70,7 @@ export const requireAuth = async (
     const configuredAuthorizedEmails: string[] = [envSuperEmail, envProEmail];
     const roleMap: Record<string, string> = { 
       [envSuperEmail]: 'superadmin',
-      [envProEmail]: 'pro'
+      [envProEmail]: 'admin'
     };
 
     try {
@@ -139,10 +148,10 @@ export const requireAdmin = async (
   next: NextFunction
 ) => {
   await requireAuth(req, res, () => {
-    if (req.userRole === 'superadmin' || req.userRole === 'admin' || req.userRole === 'pro' || req.userRole === 'executive') {
+    if (req.userRole === 'superadmin' || req.userRole === 'admin' || req.userRole === 'executive') {
       next();
     } else {
-      res.status(403).json({ error: 'Forbidden: Superadmin or PRO access required' });
+      res.status(403).json({ error: 'Forbidden: Administrative access required' });
     }
   });
 };

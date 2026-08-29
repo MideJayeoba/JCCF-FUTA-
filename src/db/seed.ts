@@ -431,41 +431,32 @@ export async function seedDatabaseIfEmpty() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT;
     `);
 
-    // 1. Seed / Upsert Superadmin & PRO Admin into `users` table
+    // 1. Seed / Upsert Superadmin into `users` table
     const superEmail = (process.env.SUPERADMIN_EMAIL || 'jayeobapeace19459@gmail.com').toLowerCase().trim();
     const superPin = (process.env.SUPERADMIN_PIN || '1945').trim();
-    const proEmail = (process.env.PRO_ADMIN_EMAIL || 'pro@jccf-futa.org').toLowerCase().trim();
-    const proPin = (process.env.PRO_ADMIN_PIN || '1945').trim();
 
     await pool.query(`
       INSERT INTO users (uid, email, display_name, photo_url, role, portfolio, security_pin, phone, last_login_at)
       VALUES 
-        ('superadmin-jayeoba-peace', $1, 'Jayeoba Peace Olamide', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80', 'superadmin', 'Central Executive Council / Superadmin', $2, '+234 813 987 6543', NOW()),
-        ('admin-pro-futa', $3, 'JCCF PRO Administrator', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80', 'pro', 'Public Relations Directorate', $4, '+234 800 000 1945', NOW())
+        ('superadmin-jayeoba-peace', $1, 'Jayeoba Peace Olamide', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80', 'superadmin', 'Central Executive Council / Superadmin', $2, '+234 813 987 6543', NOW())
       ON CONFLICT (uid) DO UPDATE SET
         email = EXCLUDED.email,
         display_name = EXCLUDED.display_name,
-        role = EXCLUDED.role,
+        role = 'superadmin',
         portfolio = EXCLUDED.portfolio,
-        security_pin = EXCLUDED.security_pin,
+        -- Keep the bootstrap PIN only until a real password is set; then drop it so
+        -- the weak default can no longer be used to log in.
+        security_pin = CASE WHEN users.password_hash IS NOT NULL THEN NULL ELSE EXCLUDED.security_pin END,
         phone = EXCLUDED.phone;
-    `, [superEmail, superPin, proEmail, proPin]);
+    `, [superEmail, superPin]);
 
     // 2. Seed / Upsert System Settings
     const authListJson = JSON.stringify([
       {
         email: superEmail,
-        name: 'Jayeoba Peace Olamide (Primary PRO Superadmin)',
+        name: 'Jayeoba Peace Olamide (Primary Superadmin)',
         role: 'superadmin',
         portfolio: 'Central Executive Council / Superadmin',
-        addedAt: 'Aug 25, 2026',
-        addedBy: 'Central Executive Council'
-      },
-      {
-        email: proEmail,
-        name: 'JCCF PRO Administrator',
-        role: 'pro',
-        portfolio: 'Public Relations Directorate',
         addedAt: 'Aug 25, 2026',
         addedBy: 'Central Executive Council'
       }
@@ -476,14 +467,12 @@ export async function seedDatabaseIfEmpty() {
       VALUES 
         ('superadmin_email', $1, NOW()),
         ('superadmin_pin', $2, NOW()),
-        ('pro_admin_email', $3, NOW()),
-        ('pro_admin_pin', $4, NOW()),
-        ('authorizedAdminList', $5, NOW()),
+        ('authorizedAdminList', $3, NOW()),
         ('youtubeChannel', '@jccf_futa', NOW())
       ON CONFLICT (key) DO UPDATE SET
         value = EXCLUDED.value,
         updated_at = NOW();
-    `, [superEmail, superPin, proEmail, proPin, authListJson]);
+    `, [superEmail, superPin, authListJson]);
 
     // 3. Seed / Ensure all 24 Member Fellowships in PostgreSQL
     const existingFellowshipsRes = await pool.query('SELECT acronym, name FROM fellowships');
@@ -509,7 +498,7 @@ export async function seedDatabaseIfEmpty() {
         existingAcronyms.add(item.acronym.toLowerCase().trim());
       }
     }
-    console.log('✅ Synchronized 24 member fellowships in PostgreSQL.');
+    console.log(`✅ Synchronized ${DEFAULT_FELLOWSHIPS.length} member fellowships in PostgreSQL.`);
 
     // 4. Seed Executives if table is empty
     const execCheck = await pool.query('SELECT COUNT(*) FROM executives');

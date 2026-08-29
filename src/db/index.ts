@@ -3,8 +3,9 @@ import pg from 'pg';
 const { Pool } = pg;
 import * as schema from './schema.ts';
 
-// Ensure cloud PostgreSQL providers with self-signed certificate chains (Supabase, Neon, Cloud SQL) connect smoothly
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+// SSL verification for cloud PostgreSQL providers (Supabase, Neon, Cloud SQL) is relaxed per-pool
+// via the `ssl` option below — we deliberately avoid the process-wide NODE_TLS_REJECT_UNAUTHORIZED
+// switch so outbound HTTPS (YouTube, oEmbed, etc.) keeps full certificate validation.
 
 declare global {
   var _postgresPool: pg.Pool | undefined;
