@@ -1,6 +1,5 @@
 import express from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { db } from './src/db/index.ts';
 import { 
@@ -19,12 +18,9 @@ import { eq, desc } from 'drizzle-orm';
 import { requireAuth, requireAdmin, AuthRequest } from './src/middleware/auth.ts';
 import { seedDatabaseIfEmpty } from './src/db/seed.ts';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json());
 
