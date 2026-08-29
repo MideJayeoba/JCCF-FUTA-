@@ -53,7 +53,7 @@ export const GivingSection: React.FC<GivingSectionProps> = ({ onOpenGiveModal })
               className="px-9 py-4 bg-white hover:bg-[#FDECEC] text-[#8B0000] font-black text-base rounded-2xl shadow-xl hover:shadow-2xl transition-all inline-flex items-center gap-2.5 cursor-pointer transform hover:-translate-y-0.5"
             >
               <Heart className="w-5 h-5 fill-[#8B0000]" />
-              <span>Give Now (Online & Direct Transfer)</span>
+              <span>View Official Bank Account Details</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

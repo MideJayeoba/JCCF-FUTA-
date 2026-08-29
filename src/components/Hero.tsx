@@ -43,7 +43,7 @@ export const Hero: React.FC<HeroProps> = ({
             {/* Red Badge */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FDECEC] border border-[#F8D0D0] text-[#8B0000] text-xs font-bold uppercase tracking-wider">
               <span className="w-2 h-2 rounded-full bg-[#B5121B] animate-pulse" />
-              <span>Federal University of Technology Akure • {settings.academicSession}</span>
+              <span>Federal University of Technology, Akure • Apex Christian Body</span>
             </div>
 
             {/* Headline */}
@@ -80,7 +80,7 @@ export const Hero: React.FC<HeroProps> = ({
             {/* Key Campus Stats */}
             <div className="pt-6 border-t border-[#E5E5E5] grid grid-cols-3 gap-4 max-w-lg">
               <div>
-                <span className="text-2xl sm:text-3xl font-black text-[#B5121B] block font-heading">{fellowships.length}+</span>
+                <span className="text-2xl sm:text-3xl font-black text-[#B5121B] block font-heading">24+</span>
                 <span className="text-xs text-[#666666] font-medium">Campus Fellowships</span>
               </div>
               <div>
@@ -114,7 +114,7 @@ export const Hero: React.FC<HeroProps> = ({
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="text-[10px] font-black uppercase tracking-wider text-[#B5121B] block">
-                        Annual Theme {settings.academicSession}
+                        Annual Fellowship Theme
                       </span>
                       <h4 className="text-sm font-extrabold text-[#171717] font-heading">
                         {settings.annualTheme}

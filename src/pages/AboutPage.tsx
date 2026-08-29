@@ -44,7 +44,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
             “Till we all come in the <span className="text-[#B5121B]">unity of faith</span>”
           </h1>
           <p className="text-sm sm:text-base text-[#666666] max-w-3xl mx-auto leading-relaxed">
-            The apex coordinating body uniting 25 registered Christian campus fellowships across the Federal University of Technology, Akure. Non-denominational, independent, and steadfast under the leading of the Holy Spirit.
+            The apex coordinating body uniting 25+ registered Christian campus fellowships across the Federal University of Technology, Akure. Non-denominational, independent, and steadfast under the leading of the Holy Spirit.
           </p>
           <div className="pt-2 text-xs font-mono text-[#8B0000] bg-[#FDECEC] inline-block px-3 py-1 rounded-md border border-[#F8D0D0]">
             Scriptural Anchor: Ephesians 4:13
@@ -360,7 +360,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
       <div className="py-14 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
           <h2 className="text-2xl font-bold font-heading text-[#171717]">
-            25 Registered Member Fellowships
+            25+ Registered Member Fellowships
           </h2>
           <p className="text-xs sm:text-sm text-[#666666] max-w-xl mx-auto">
             Discover the constituent fellowship families formally affiliated with the Household under the reviewed constitution.

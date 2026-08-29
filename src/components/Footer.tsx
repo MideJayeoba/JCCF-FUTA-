@@ -93,7 +93,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenGiveModal }) =
               </li>
               <li>
                 <button onClick={() => handleNav('fellowships')} className="hover:text-white transition-colors cursor-pointer">
-                  Member Fellowships (25)
+                  Member Fellowships (24+)
                 </button>
               </li>
               <li>

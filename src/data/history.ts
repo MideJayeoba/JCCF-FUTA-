@@ -27,8 +27,8 @@ export const JCCF_HISTORY_MILESTONES: TimelineMilestone[] = [
   },
   {
     year: '2024',
-    title: 'Constitution Review & Expansion to 25 Registered Fellowships',
-    description: 'Under the 26th Administration led by Ogunyimika Nifemi, the JCCFCOP and stakeholders (including Venerable Lasehinde, Prof. Ayodeji, Prof. Okunlola, Prof. Olukunle, and alumni) completed a comprehensive constitutional review, uniting 25 registered constituent fellowships across FUTA.',
+    title: 'Constitution Review & Unification of 25+ Constituent Fellowships',
+    description: 'Under the 26th Administration led by Ogunyimika Nifemi, the JCCFCOP and stakeholders (including Venerable Lasehinde, Prof. Ayodeji, Prof. Okunlola, Prof. Olukunle, and alumni) completed a comprehensive constitutional review, uniting 25+ registered constituent fellowships across FUTA.',
     tag: 'Reviewed Constitution'
   },
   {

@@ -25,7 +25,7 @@ export const GetInvolvedSection: React.FC<GetInvolvedSectionProps> = ({
     {
       id: 'join',
       title: 'Join a Fellowship',
-      description: 'Connect with a vibrant family of campus worshippers across 25 member fellowships.',
+      description: 'Connect with a vibrant family of campus worshippers across 24+ member fellowships.',
       icon: Users,
       actionText: 'Browse Fellowships',
       onClick: () => onNavigate('fellowships'),

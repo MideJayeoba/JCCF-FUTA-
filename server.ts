@@ -584,8 +584,8 @@ async function startServer() {
       const data = await db.select().from(announcements).orderBy(desc(announcements.id));
       res.json(data);
     } catch (error: any) {
-      console.error('Error fetching announcements:', error);
-      res.status(500).json({ error: 'Failed to fetch announcements' });
+      console.warn('DB note fetching announcements:', error.message || error);
+      res.json([]);
     }
   });
 
@@ -646,8 +646,8 @@ async function startServer() {
       const data = await db.select().from(events).orderBy(desc(events.id));
       res.json(data);
     } catch (error: any) {
-      console.error('Error fetching events:', error);
-      res.status(500).json({ error: 'Failed to fetch events' });
+      console.warn('DB note fetching events:', error.message || error);
+      res.json([]);
     }
   });
 
@@ -713,8 +713,8 @@ async function startServer() {
       const data = await db.select().from(fellowships);
       res.json(data);
     } catch (error: any) {
-      console.error('Error fetching fellowships:', error);
-      res.status(500).json({ error: 'Failed to fetch fellowships' });
+      console.warn('DB note fetching fellowships:', error.message || error);
+      res.json([]);
     }
   });
 
@@ -784,8 +784,8 @@ async function startServer() {
       const data = await db.select().from(executives);
       res.json(data);
     } catch (error: any) {
-      console.error('Error fetching executives:', error);
-      res.status(500).json({ error: 'Failed to fetch executives' });
+      console.warn('DB note fetching executives:', error.message || error);
+      res.json([]);
     }
   });
 
@@ -855,8 +855,8 @@ async function startServer() {
       const data = await db.select().from(resources).orderBy(desc(resources.id));
       res.json(data);
     } catch (error: any) {
-      console.error('Error fetching resources:', error);
-      res.status(500).json({ error: 'Failed to fetch resources' });
+      console.warn('DB note fetching resources:', error.message || error);
+      res.json([]);
     }
   });
 
@@ -941,8 +941,8 @@ async function startServer() {
       const totalAmount = data.reduce((sum, d) => sum + (d.amount || 0), 0);
       res.json({ donations: data, totalAmount, count: data.length });
     } catch (error: any) {
-      console.error('Error fetching donations:', error);
-      res.status(500).json({ error: 'Failed to fetch donations' });
+      console.warn('DB note fetching donations:', error.message || error);
+      res.json({ donations: [], totalAmount: 0, count: 0 });
     }
   });
 
@@ -1083,8 +1083,8 @@ async function startServer() {
       }));
       res.json(mapped);
     } catch (error: any) {
-      console.error('Error fetching historical executives:', error);
-      res.status(500).json({ error: 'Failed to fetch historical executives' });
+      console.warn('DB note fetching historical executives:', error.message || error);
+      res.json([]);
     }
   });
 
@@ -1197,8 +1197,8 @@ async function startServer() {
       }));
       res.json(mapped);
     } catch (error: any) {
-      console.error('Error fetching media:', error);
-      res.status(500).json({ error: 'Failed to fetch media' });
+      console.warn('DB note fetching media:', error.message || error);
+      res.json([]);
     }
   });
 
@@ -1270,8 +1270,8 @@ async function startServer() {
       });
       res.json(settingsMap);
     } catch (error: any) {
-      console.error('Error fetching settings:', error);
-      res.status(500).json({ error: 'Failed to fetch settings' });
+      console.warn('DB note fetching settings:', error.message || error);
+      res.json({});
     }
   });
 

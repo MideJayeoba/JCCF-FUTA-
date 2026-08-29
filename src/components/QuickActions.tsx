@@ -18,7 +18,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       description: 'Discover your Christian denomination and weekly meeting location in FUTA.',
       icon: Users,
       action: () => onNavigate('fellowships'),
-      badge: '25 Fellowships'
+      badge: '24+ Fellowships'
     },
     {
       id: 'events',

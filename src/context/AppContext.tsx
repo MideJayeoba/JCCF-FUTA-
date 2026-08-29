@@ -503,6 +503,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       } catch (_) {}
 
+      // Historical Executives / Past Administrations
+      try {
+        const resHist = await fetch('/api/historical-executives');
+        if (resHist.ok) {
+          const histData = await resHist.json();
+          if (Array.isArray(histData) && histData.length > 0) {
+            const mappedHist: HistoricalExecutive[] = histData
+              .filter((d: any) => !deleted.has(String(d.id)) && !deleted.has(d.tenure))
+              .map((d: any) => ({
+                id: String(d.id),
+                tenure: d.tenure,
+                generationName: d.generationName,
+                theme: d.theme || '',
+                president: d.president,
+                executivesList: d.executivesList || '',
+                mission: d.mission || '',
+                vision: d.vision || '',
+                keyAchievements: Array.isArray(d.keyAchievements) ? d.keyAchievements : [],
+                photoUrl: d.photoUrl || ''
+              }));
+            if (mappedHist.length > 0) {
+              setHistoricalExecutives(mappedHist);
+            }
+          }
+        }
+      } catch (histErr) {
+        console.warn('DB historical executives fetch note:', histErr);
+      }
+
       // Settings
       const resSet = await fetch('/api/settings');
       if (resSet.ok) {
@@ -1080,6 +1109,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (_) {}
       return updated;
     });
+
+    try {
+      const headers = await getAuthHeaders();
+      await fetch('/api/historical-executives', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          tenure: item.tenure,
+          generationName: item.generationName,
+          theme: item.theme,
+          president: item.president,
+          executivesList: item.executivesList,
+          mission: item.mission,
+          vision: item.vision,
+          keyAchievements: item.keyAchievements,
+          photoUrl: item.photoUrl
+        })
+      });
+    } catch (err) {
+      console.warn('Historical executive create failed:', err);
+    }
+
     addAuditLog('Added past administration record', `${item.tenure} - ${item.president}`, 'create');
   };
 
@@ -1091,10 +1142,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (_) {}
       return updated;
     });
+
+    try {
+      const target = historicalExecutives.find(h => h.tenure === tenureOrId || h.id === tenureOrId);
+      const idToUse = target?.id || tenureOrId;
+      const headers = await getAuthHeaders();
+      await fetch(`/api/historical-executives/${idToUse}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(item)
+      });
+    } catch (err) {
+      console.warn('Historical executive update failed:', err);
+    }
+
     addAuditLog('Updated past administration record', tenureOrId, 'update');
   };
 
   const deleteHistoricalExecutive = async (tenureOrId: string) => {
+    const target = historicalExecutives.find(h => h.tenure === tenureOrId || h.id === tenureOrId);
+    markIdDeleted(tenureOrId, target?.generationName || target?.president);
+    if (target?.id) markIdDeleted(target.id);
+    
     setHistoricalExecutives(prev => {
       const updated = prev.filter(h => h.tenure !== tenureOrId && h.id !== tenureOrId);
       try {
@@ -1102,6 +1171,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (_) {}
       return updated;
     });
+
+    try {
+      const idToUse = target?.id || tenureOrId;
+      const headers = await getAuthHeaders();
+      await fetch(`/api/historical-executives/${idToUse}`, { method: 'DELETE', headers });
+    } catch (err) {
+      console.warn('Historical executive delete failed:', err);
+    }
+
     addAuditLog('Deleted past administration record', tenureOrId, 'delete');
   };
 
@@ -1288,8 +1366,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return savedRecord;
   };
 
-  const deleteDonation = (id: string) => {
+  const deleteDonation = async (id: string) => {
     setDonations(prev => prev.filter(d => d.id !== id));
+    try {
+      const headers = await getAuthHeaders();
+      await fetch(`/api/donations/${id}`, { method: 'DELETE', headers });
+    } catch (err) {
+      console.warn('Donation delete failed:', err);
+    }
+    addAuditLog('Removed stewardship record', id, 'delete');
   };
 
   // --- SETTINGS (PostgreSQL) ---

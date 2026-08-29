@@ -2,38 +2,53 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool, PoolConfig } from 'pg';
 import * as schema from './schema.ts';
 
+// Ensure cloud PostgreSQL providers with self-signed certificate chains (Supabase, Neon, AWS) connect smoothly
+if (process.env.NODE_ENV !== 'production' || process.env.DATABASE_URL) {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
+
 declare global {
   var _postgresPool: Pool | undefined;
 }
 
 export const createPool = () => {
   if (!global._postgresPool) {
-    const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+    const rawConnectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
-    const poolConfig: PoolConfig = connectionString
-      ? {
-          connectionString,
-          ssl: connectionString.includes('localhost') || connectionString.includes('127.0.0.1')
-            ? false
-            : { rejectUnauthorized: false },
-          max: 10,
-          connectionTimeoutMillis: 15000,
-        }
-      : {
-          host: process.env.SQL_HOST || process.env.PGHOST || 'localhost',
-          port: Number(process.env.SQL_PORT || process.env.PGPORT || 5432),
-          user: process.env.SQL_USER || process.env.PGUSER || 'postgres',
-          password: process.env.SQL_PASSWORD || process.env.PGPASSWORD || '',
-          database: process.env.SQL_DB_NAME || process.env.PGDATABASE || 'postgres',
-          ssl: process.env.SQL_SSL === 'true' ? { rejectUnauthorized: false } : false,
-          max: 10,
-          connectionTimeoutMillis: 15000,
-        };
+    if (rawConnectionString) {
+      // Strip sslmode=... so pg-connection-string doesn't force rejectUnauthorized: true
+      let cleanConnStr = rawConnectionString;
+      if (cleanConnStr.includes('sslmode=')) {
+        cleanConnStr = cleanConnStr.replace(/([?&])sslmode=[^&]+(&|$)/, '$1').replace(/[?&]$/, '');
+      }
 
-    global._postgresPool = new Pool(poolConfig);
+      const isLocal = cleanConnStr.includes('localhost') || cleanConnStr.includes('127.0.0.1');
+
+      const poolConfig: PoolConfig = {
+        connectionString: cleanConnStr,
+        ssl: isLocal ? false : { rejectUnauthorized: false },
+        max: 10,
+        connectionTimeoutMillis: 15000,
+      };
+
+      global._postgresPool = new Pool(poolConfig);
+    } else {
+      const poolConfig: PoolConfig = {
+        host: process.env.SQL_HOST || process.env.PGHOST || 'localhost',
+        port: Number(process.env.SQL_PORT || process.env.PGPORT || 5432),
+        user: process.env.SQL_USER || process.env.PGUSER || 'postgres',
+        password: process.env.SQL_PASSWORD || process.env.PGPASSWORD || '',
+        database: process.env.SQL_DB_NAME || process.env.PGDATABASE || 'postgres',
+        ssl: process.env.SQL_SSL === 'true' ? { rejectUnauthorized: false } : false,
+        max: 10,
+        connectionTimeoutMillis: 15000,
+      };
+
+      global._postgresPool = new Pool(poolConfig);
+    }
 
     global._postgresPool.on('error', (err) => {
-      console.error('Unexpected error on idle PostgreSQL pool client:', err);
+      console.warn('PostgreSQL pool notice:', err.message);
     });
   }
   return global._postgresPool;

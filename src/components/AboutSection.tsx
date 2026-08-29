@@ -38,7 +38,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ onLearnMore }) => {
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div className="text-left">
-                <span className="text-xs font-bold text-[#171717] block">25 Member Fellowships</span>
+                <span className="text-xs font-bold text-[#171717] block">24+ Member Fellowships</span>
                 <span className="text-[11px] text-[#666666]">Formally Registered Under FUTA Management</span>
               </div>
             </div>
@@ -80,7 +80,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ onLearnMore }) => {
               </div>
               <div className="flex items-center gap-2 text-xs font-semibold text-[#171717]">
                 <CheckCircle2 className="w-4 h-4 text-[#B5121B] shrink-0" />
-                <span>25 Registered Constituent Fellowships</span>
+                <span>25+ Registered Constituent Fellowships</span>
               </div>
             </div>
 
