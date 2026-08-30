@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send, CheckCircle2, MessageSquare, Clock } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, CheckCircle2, MessageSquare, Clock, Instagram, Facebook, Youtube, ShieldCheck } from 'lucide-react';
 
 export const ContactPage: React.FC = () => {
   const [submitted, setSubmitted] = useState(false);
@@ -84,8 +84,7 @@ export const ContactPage: React.FC = () => {
                   </div>
                   <div>
                     <strong className="text-[#171717] block">Official Email:</strong>
-                    <span>secretariat.jccf@futa.edu.ng</span>
-                    <span className="block">pro.jccf@futa.edu.ng</span>
+                    <span>futajccf@gmail.com</span>
                   </div>
                 </div>
 
@@ -99,6 +98,75 @@ export const ContactPage: React.FC = () => {
                     <span className="block">Sundays: 2:00 PM - 7:00 PM</span>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Stay in Touch Social Links Card */}
+            <div className="bg-white p-6 rounded-3xl border border-[#E5E5E5] space-y-4 shadow-xs">
+              <h2 className="text-xl font-bold font-heading text-[#171717]">
+                Stay in Touch
+              </h2>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <a 
+                  href="https://chat.whatsapp.com/LkLMVfYoOI216cfr4pD3gm" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="p-3 bg-[#FAFAFA] hover:bg-[#FDECEC] border border-[#E5E5E5] rounded-2xl font-bold flex flex-col items-center justify-center text-center transition-colors group cursor-pointer"
+                >
+                  <Phone className="w-5 h-5 text-[#B5121B] group-hover:scale-110 transition-transform mb-1" />
+                  <span className="text-[#171717]">WA Group</span>
+                  <span className="text-[9px] text-[#666666] font-normal mt-0.5">Community</span>
+                </a>
+                <a 
+                  href="https://whatsapp.com/channel/0029Vay9yRR3wtb1yrhKOh3w" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="p-3 bg-[#FAFAFA] hover:bg-[#FDECEC] border border-[#E5E5E5] rounded-2xl font-bold flex flex-col items-center justify-center text-center transition-colors group cursor-pointer"
+                >
+                  <ShieldCheck className="w-5 h-5 text-[#B5121B] group-hover:scale-110 transition-transform mb-1" />
+                  <span className="text-[#171717]">WA Channel</span>
+                  <span className="text-[9px] text-[#666666] font-normal mt-0.5">Updates</span>
+                </a>
+                <a 
+                  href="https://www.instagram.com/jccffuta_gram?igsh=MXJ0djVtYnBhNmgyNQ==" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="p-3 bg-[#FAFAFA] hover:bg-[#FDECEC] border border-[#E5E5E5] rounded-2xl font-bold flex flex-col items-center justify-center text-center transition-colors group cursor-pointer"
+                >
+                  <Instagram className="w-5 h-5 text-[#B5121B] group-hover:scale-110 transition-transform mb-1" />
+                  <span className="text-[#171717]">Instagram</span>
+                  <span className="text-[9px] text-[#666666] font-normal mt-0.5">@jccffuta_gram</span>
+                </a>
+                <a 
+                  href="https://t.me/jccf_futa" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="p-3 bg-[#FAFAFA] hover:bg-[#FDECEC] border border-[#E5E5E5] rounded-2xl font-bold flex flex-col items-center justify-center text-center transition-colors group cursor-pointer"
+                >
+                  <Send className="w-5 h-5 text-[#B5121B] group-hover:scale-110 transition-transform mb-1" />
+                  <span className="text-[#171717]">Telegram</span>
+                  <span className="text-[9px] text-[#666666] font-normal mt-0.5">Channel</span>
+                </a>
+                <a 
+                  href="https://www.facebook.com/people/JCCF-FUTA/100067526830978/" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="p-3 bg-[#FAFAFA] hover:bg-[#FDECEC] border border-[#E5E5E5] rounded-2xl font-bold flex flex-col items-center justify-center text-center transition-colors group cursor-pointer"
+                >
+                  <Facebook className="w-5 h-5 text-[#B5121B] group-hover:scale-110 transition-transform mb-1" />
+                  <span className="text-[#171717]">Facebook</span>
+                  <span className="text-[9px] text-[#666666] font-normal mt-0.5">JCCF FUTA</span>
+                </a>
+                <a 
+                  href="https://www.youtube.com/@jccf_futa" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="p-3 bg-[#FAFAFA] hover:bg-[#FDECEC] border border-[#E5E5E5] rounded-2xl font-bold flex flex-col items-center justify-center text-center transition-colors group cursor-pointer"
+                >
+                  <Youtube className="w-5 h-5 text-[#B5121B] group-hover:scale-110 transition-transform mb-1" />
+                  <span className="text-[#171717]">YouTube</span>
+                  <span className="text-[9px] text-[#666666] font-normal mt-0.5">@jccf_futa</span>
+                </a>
               </div>
             </div>
           </div>

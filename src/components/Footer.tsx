@@ -10,7 +10,8 @@ import {
   ShieldCheck,
   Instagram,
   Facebook,
-  Youtube
+  Youtube,
+  Send
 } from 'lucide-react';
 import { JCCFLogo } from './JCCFLogo';
 
@@ -55,6 +56,28 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenGiveModal }) =
             <p className="text-xs sm:text-sm text-white/80 leading-relaxed max-w-sm">
               The apex coordinating Christian fellowship body at the Federal University of Technology Akure, committed to spiritual revival, student welfare, inter-fellowship unity, and kingdom impact.
             </p>
+
+            {/* Social Media Stay In Touch */}
+            <div className="flex items-center gap-4 text-white/70 pt-1">
+              <a href="https://chat.whatsapp.com/LkLMVfYoOI216cfr4pD3gm" target="_blank" rel="noopener noreferrer" className="hover:text-[#25D366] transition-colors" title="WhatsApp Group">
+                <Phone className="w-4 h-4" />
+              </a>
+              <a href="https://whatsapp.com/channel/0029Vay9yRR3wtb1yrhKOh3w" target="_blank" rel="noopener noreferrer" className="hover:text-[#25D366] transition-colors" title="WhatsApp Channel">
+                <ShieldCheck className="w-4 h-4" />
+              </a>
+              <a href="https://www.instagram.com/jccffuta_gram?igsh=MXJ0djVtYnBhNmgyNQ==" target="_blank" rel="noopener noreferrer" className="hover:text-[#E1306C] transition-colors" title="Instagram">
+                <Instagram className="w-4 h-4" />
+              </a>
+              <a href="https://t.me/jccf_futa" target="_blank" rel="noopener noreferrer" className="hover:text-[#0088cc] transition-colors" title="Telegram Channel">
+                <Send className="w-4 h-4" />
+              </a>
+              <a href="https://www.facebook.com/people/JCCF-FUTA/100067526830978/" target="_blank" rel="noopener noreferrer" className="hover:text-[#1877F2] transition-colors" title="Facebook Page">
+                <Facebook className="w-4 h-4" />
+              </a>
+              <a href="https://www.youtube.com/@jccf_futa" target="_blank" rel="noopener noreferrer" className="hover:text-[#FF0000] transition-colors" title="YouTube Channel">
+                <Youtube className="w-4 h-4" />
+              </a>
+            </div>
 
             <div className="pt-2 flex items-center gap-3">
               <button
@@ -159,7 +182,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenGiveModal }) =
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-white shrink-0" />
-                <span>secretariat.jccf@futa.edu.ng</span>
+                <span>futajccf@gmail.com</span>
               </div>
             </div>
           </div>

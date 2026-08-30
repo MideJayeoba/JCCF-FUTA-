@@ -195,9 +195,13 @@ export const initDatabaseTables = async () => {
     `);
     console.log('✅ PostgreSQL database tables initialized successfully.');
 
-    // Seed database with default data if empty
-    const { seedDatabaseIfEmpty } = await import('./seed.ts');
-    await seedDatabaseIfEmpty();
+    // Seed database only if explicitly enabled (prevent overriding production data)
+    if (process.env.RUN_SEEDING === 'true') {
+      const { seedDatabaseIfEmpty } = await import('./seed.ts');
+      await seedDatabaseIfEmpty();
+    } else {
+      console.log('ℹ️ Database seeding skipped. Set RUN_SEEDING="true" in .env to seed initial data.');
+    }
   } catch (err: any) {
     console.warn('PostgreSQL table initialization notice:', err.message);
   }

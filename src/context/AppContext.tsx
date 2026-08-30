@@ -139,7 +139,7 @@ const DEFAULT_SETTINGS: SystemSettings = {
   academicSession: '2025/2026 Academic Session',
   annualTheme: 'Reigning by Grace & Wisdom',
   themeScripture: 'Romans 5:17 • Daniel 1:17',
-  officeEmail: 'secretariat.jccf@futa.edu.ng',
+  officeEmail: 'futajccf@gmail.com',
   officePhone: '+234 813 456 7890',
   chapelAddress: 'JCCF Secretariat, Near ETF Lecture Theatre, FUTA South Gate',
   superadminPin: '778899',
