@@ -8,7 +8,11 @@ import {
   Flame, 
   CheckCircle2, 
   Calendar,
-  Sparkles
+  Sparkles,
+  Phone,
+  ShieldCheck,
+  Instagram,
+  Send
 } from 'lucide-react';
 
 interface HeroProps {
@@ -75,6 +79,47 @@ export const Hero: React.FC<HeroProps> = ({
                 <Users className="w-4 h-4" />
                 <span>Find a Fellowship</span>
               </button>
+            </div>
+
+            {/* Quick Stay In Touch Row */}
+            <div className="flex flex-wrap items-center gap-2 pt-1.5 pb-2">
+              <span className="text-[11px] font-black text-[#666666] uppercase tracking-wider block mr-1">Join Community:</span>
+              <a 
+                href="https://chat.whatsapp.com/LkLMVfYoOI216cfr4pD3gm" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="px-3 py-1.5 rounded-full bg-[#E8F8EF] hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#C6EFD9] text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer shadow-3xs"
+              >
+                <Phone className="w-3 h-3" />
+                <span>WA Group</span>
+              </a>
+              <a 
+                href="https://whatsapp.com/channel/0029Vay9yRR3wtb1yrhKOh3w" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="px-3 py-1.5 rounded-full bg-[#E8F8EF] hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#C6EFD9] text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer shadow-3xs"
+              >
+                <ShieldCheck className="w-3 h-3" />
+                <span>WA Channel</span>
+              </a>
+              <a 
+                href="https://www.instagram.com/jccffuta_gram?igsh=MXJ0djVtYnBhNmgyNQ==" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="px-3 py-1.5 rounded-full bg-[#FCE8ED] hover:bg-[#E1306C] text-[#E1306C] hover:text-white border border-[#F9D0DC] text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer shadow-3xs"
+              >
+                <Instagram className="w-3 h-3" />
+                <span>Instagram</span>
+              </a>
+              <a 
+                href="https://t.me/jccf_futa" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="px-3 py-1.5 rounded-full bg-[#E6F3FA] hover:bg-[#0088cc] text-[#0088cc] hover:text-white border border-[#CCE8F5] text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer shadow-3xs"
+              >
+                <Send className="w-3 h-3" />
+                <span>Telegram</span>
+              </a>
             </div>
 
             {/* Key Campus Stat */}

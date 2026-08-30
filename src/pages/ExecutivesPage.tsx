@@ -13,10 +13,10 @@ export const ExecutivesPage: React.FC = () => {
             <span>Leadership & Governance</span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-black font-heading text-[#171717] tracking-tight">
-            Executive Council & <span className="text-[#B5121B]">Honor Archives</span>
+            JCCF Household & <span className="text-[#B5121B]">Honor Archives</span>
           </h1>
           <p className="text-sm sm:text-base text-[#666666] max-w-2xl mx-auto leading-relaxed">
-            Meet the 2026/2027 Central Executive Council (CEC) steering JCCF FUTA and explore our past presidents and milestone tenures.
+            Meet the 2026/2027 JCCF Household steering JCCF FUTA and explore our past presidents and milestone tenures.
           </p>
         </div>
       </div>

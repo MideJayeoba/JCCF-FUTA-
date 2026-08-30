@@ -52,7 +52,12 @@ async function startServer() {
   app.all('/api/diagnostics/test-db-write', async (req, res) => {
     const diagStart = Date.now();
     const serverSteps: any[] = [];
-    console.log('\n================ [SUPABASE/POSTGRESQL WRITE DIAGNOSTIC INITIATED] ================');
+    
+    const logDiag = (msg: string) => {
+      if (process.env.NODE_ENV !== 'production') console.log(msg);
+    };
+
+    logDiag('\n================ [SUPABASE/POSTGRESQL WRITE DIAGNOSTIC INITIATED] ================');
     
     const rawConnectionString = (process.env.DATABASE_URL || '').trim();
     let maskedHost = 'localhost';
@@ -97,7 +102,7 @@ async function startServer() {
         durationMs: connDuration,
         details: `Connected to ${maskedHost} (${dbName}) in ${connDuration}ms.`
       });
-      console.log(`[DIAGNOSTICS] ✅ Step 1 Passed: Connected to ${maskedHost} (${connDuration}ms)`);
+      logDiag(`[DIAGNOSTICS] ✅ Step 1 Passed: Connected to ${maskedHost} (${connDuration}ms)`);
 
       // Step B: Schema & Table Verification
       const tTableStart = Date.now();
@@ -118,7 +123,7 @@ async function startServer() {
         durationMs: tableDuration,
         details: `Discovered ${foundTables.length} public tables: ${foundTables.join(', ')}`
       });
-      console.log(`[DIAGNOSTICS] ✅ Step 2 Passed: Found ${foundTables.length} tables in ${tableDuration}ms`);
+      logDiag(`[DIAGNOSTICS] ✅ Step 2 Passed: Found ${foundTables.length} tables in ${tableDuration}ms`);
 
       // Step C: Drizzle ORM Write Operation (INSERT probe record)
       const tInsertStart = Date.now();
@@ -144,7 +149,7 @@ async function startServer() {
         durationMs: insertDuration,
         details: `Successfully inserted probe row (ID #${probeId}) in ${insertDuration}ms.`
       });
-      console.log(`[DIAGNOSTICS] ✅ Step 3 Passed: INSERT probe row #${probeId} (${insertDuration}ms)`);
+      logDiag(`[DIAGNOSTICS] ✅ Step 3 Passed: INSERT probe row #${probeId} (${insertDuration}ms)`);
 
       // Step D: Read Verification (SELECT probe record)
       const tSelectStart = Date.now();
@@ -161,7 +166,7 @@ async function startServer() {
         durationMs: selectDuration,
         details: `Successfully fetched and verified probe row #${probeId} in ${selectDuration}ms.`
       });
-      console.log(`[DIAGNOSTICS] ✅ Step 4 Passed: SELECT verification (${selectDuration}ms)`);
+      logDiag(`[DIAGNOSTICS] ✅ Step 4 Passed: SELECT verification (${selectDuration}ms)`);
 
       // Step E: Update Mutation Test (UPDATE probe record)
       const tUpdateStart = Date.now();
@@ -176,7 +181,7 @@ async function startServer() {
         durationMs: updateDuration,
         details: `Successfully updated probe row #${probeId} in ${updateDuration}ms.`
       });
-      console.log(`[DIAGNOSTICS] ✅ Step 5 Passed: UPDATE probe row #${probeId} (${updateDuration}ms)`);
+      logDiag(`[DIAGNOSTICS] ✅ Step 5 Passed: UPDATE probe row #${probeId} (${updateDuration}ms)`);
 
       // Step F: Cleanup Test (DELETE probe record)
       const tDeleteStart = Date.now();
@@ -189,10 +194,10 @@ async function startServer() {
         durationMs: deleteDuration,
         details: `Successfully removed probe row #${probeId} in ${deleteDuration}ms. Zero lingering test data.`
       });
-      console.log(`[DIAGNOSTICS] ✅ Step 6 Passed: DELETE cleanup (${deleteDuration}ms)`);
+      logDiag(`[DIAGNOSTICS] ✅ Step 6 Passed: DELETE cleanup (${deleteDuration}ms)`);
 
       const totalLatencyMs = Date.now() - diagStart;
-      console.log(`================ [DIAGNOSTIC TEST COMPLETE: ALL PASSED in ${totalLatencyMs}ms] ================\n`);
+      logDiag(`================ [DIAGNOSTIC TEST COMPLETE: ALL PASSED in ${totalLatencyMs}ms] ================\n`);
 
       return res.json({
         success: true,

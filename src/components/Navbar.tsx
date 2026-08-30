@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { NavigationPage } from '../types';
-import { 
-  Menu, 
-  X, 
-  Heart, 
+import {
+  Menu,
+  X,
+  Heart,
   ChevronRight,
   Lock,
   LogIn,
@@ -76,15 +76,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header
-      className={`sticky top-0 z-40 w-full transition-all duration-200 ${
-        scrolled
+      className={`sticky top-0 z-40 w-full transition-all duration-200 ${scrolled
           ? 'bg-white/95 backdrop-blur-md shadow-xs border-b border-[#E5E5E5]'
           : 'bg-white border-b border-[#E5E5E5]'
-      }`}
+        }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18 sm:h-20">
-          
+
           {/* JCCF FUTA Logo */}
           <button
             onClick={() => handleNavClick('home')}
@@ -120,11 +119,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   key={link.page}
                   onClick={() => handleNavClick(link.page)}
-                  className={`px-3 py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer ${
-                    isActive
+                  className={`px-3 py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer ${isActive
                       ? 'text-[#B5121B] bg-[#FDECEC]'
                       : 'text-[#171717] hover:text-[#B5121B] hover:bg-[#FAFAFA]'
-                  }`}
+                    }`}
                 >
                   {link.label}
                 </button>
@@ -135,21 +133,21 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Desktop Actions */}
           <div className="hidden lg:flex items-center gap-3">
             {/* Database sync status pill */}
-            <div 
+            <div
               title={isSyncing ? "Syncing with PostgreSQL..." : "Connected to Cloud SQL PostgreSQL"}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#FAFAFA] border border-[#E5E5E5] text-[11px] text-[#666666]"
             >
               <Database className={`w-3 h-3 ${isSyncing ? 'text-amber-500 animate-spin' : 'text-emerald-600'}`} />
-              <span className="hidden xl:inline font-mono">PostgreSQL</span>
+              <span className="hidden xl:inline font-mono">Live</span>
             </div>
 
             {/* User Account / Google Sign-in */}
             {currentUser ? (
               <div className="flex items-center gap-2 bg-[#FAFAFA] border border-[#E5E5E5] rounded-xl px-2 py-1">
                 {currentUser.photoURL ? (
-                  <img 
-                    src={currentUser.photoURL} 
-                    alt="avatar" 
+                  <img
+                    src={currentUser.photoURL}
+                    alt="avatar"
                     className="w-7 h-7 rounded-lg object-cover"
                     referrerPolicy="no-referrer"
                   />
@@ -181,20 +179,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                 title="Sign in with Google"
               >
                 <LogIn className="w-3.5 h-3.5 text-[#B5121B]" />
-                <span>Sign In</span>
+                <span>--</span>
               </button>
             )}
 
             {/* Admin Portal Button */}
             <button
               onClick={() => handleNavClick('admin')}
-              className={`p-2 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
-                currentPage === 'admin'
+              className={`p-2 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${currentPage === 'admin'
                   ? 'bg-[#B5121B] text-white'
                   : isSuper
-                  ? 'bg-[#FDECEC] text-[#8B0000] border border-[#F8D0D0]'
-                  : 'text-[#666666] hover:text-[#171717] hover:bg-[#FAFAFA]'
-              }`}
+                    ? 'bg-[#FDECEC] text-[#8B0000] border border-[#F8D0D0]'
+                    : 'text-[#666666] hover:text-[#171717] hover:bg-[#FAFAFA]'
+                }`}
               title="Admin Portal"
             >
               <Lock className="w-3.5 h-3.5" />
@@ -242,11 +239,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 key={link.page}
                 onClick={() => handleNavClick(link.page)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer text-left ${
-                  isActive
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer text-left ${isActive
                     ? 'bg-[#FDECEC] text-[#B5121B]'
                     : 'text-[#171717] hover:bg-[#FAFAFA]'
-                }`}
+                  }`}
               >
                 <span>{link.label}</span>
                 <ChevronRight className={`w-4 h-4 ${isActive ? 'text-[#B5121B]' : 'text-[#666666]'}`} />

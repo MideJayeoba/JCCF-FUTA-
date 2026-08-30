@@ -9,7 +9,8 @@ import {
   ArrowRight, 
   Search, 
   FolderArchive,
-  ShieldCheck
+  ShieldCheck,
+  Send
 } from 'lucide-react';
 
 interface ResourcesSectionProps {
@@ -171,6 +172,33 @@ export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
             </button>
           </div>
         )}
+
+        {/* Telegram call for resources */}
+        <div className="mt-12 p-6 bg-gradient-to-br from-[#8B0000] via-[#A30F16] to-[#B5121B] border border-[#B5121B]/30 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6 text-left max-w-4xl mx-auto shadow-md relative overflow-hidden group">
+          {/* Decorative Back Light */}
+          <div className="absolute -top-12 -right-12 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
+          
+          <div className="space-y-1 relative z-10">
+            <h4 className="text-sm font-black text-white uppercase tracking-wider font-heading flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Access More Fellowship Resources</span>
+            </h4>
+            <p className="text-[11px] sm:text-xs text-white/90 font-medium leading-relaxed max-w-xl">
+              Join our Telegram channel to access our digital archives, weekly hymnal guidelines, sessional study manuals, Christian e-books, and sessional flyers.
+            </p>
+          </div>
+          <div className="relative z-10">
+            <a 
+              href="https://t.me/jccf_futa" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="px-5 py-2.5 rounded-xl bg-white hover:bg-[#E6F3FA] text-[#0088cc] hover:scale-105 text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow-md"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Telegram Channel</span>
+            </a>
+          </div>
+        </div>
 
       </div>
     </section>

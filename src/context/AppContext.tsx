@@ -1036,7 +1036,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const savedId = String(saved.id);
         newRecord = { ...newRecord, id: savedId };
         setFellowships(prev => prev.map(f => f.id === tempId ? { ...f, id: savedId } : f));
-        console.log('✅ Fellowship persisted to PostgreSQL:', saved);
       }
     } catch (err) {
       console.warn('Fellowship sync error:', err);

@@ -1374,10 +1374,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div>
                     <h2 className="text-lg font-bold font-heading text-[#171717]">
-                      Executive Council Roster ({executives.length})
+                      JCCF Household Roster ({executives.length})
                     </h2>
                     <p className="text-xs text-[#666666]">
-                      Central Executive Council officers, portfolios, and contact details.
+                      JCCF Household officers, portfolios, and contact details.
                     </p>
                   </div>
 
@@ -1778,7 +1778,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                       </div>
                     </div>
                     <div className="text-right text-[11px] text-[#666666]">
-                      <div className="font-bold text-[#171717]">Central Executive Council</div>
+                      <div className="font-bold text-[#171717]">JCCF Household</div>
                       <div>Public Relations Office (Permanent Root)</div>
                     </div>
                   </div>
@@ -2952,14 +2952,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs font-bold text-[#171717] block mb-1">Office / Portfolio:</label>
-                  <input
-                    type="text"
+                  <select
                     required
-                    placeholder="e.g. Public Relations Officer"
                     value={activeExecutive.office || ''}
                     onChange={(e) => setActiveExecutive({ ...activeExecutive, office: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#FAFAFA] border border-[#E5E5E5] rounded-xl text-xs text-[#171717]"
-                  />
+                    className="w-full px-3 py-2 bg-[#FAFAFA] border border-[#E5E5E5] rounded-xl text-xs text-[#171717] outline-none focus:ring-1 focus:ring-[#B5121B]"
+                  >
+                    <option value="">Select Position...</option>
+                    <option value="President">President</option>
+                    <option value="Vice President">Vice President</option>
+                    <option value="General Secretary">General Secretary</option>
+                    <option value="Prayer Coordinator">Prayer Coordinator</option>
+                    <option value="Sister Coordinator">Sister Coordinator</option>
+                    <option value="Financial Secretary">Financial Secretary</option>
+                    <option value="PRO">PRO</option>
+                    <option value="Chief Usher">Chief Usher</option>
+                    <option value="Organizing Coordinator">Organizing Coordinator</option>
+                    <option value="Choir Coordinator">Choir Coordinator</option>
+                    <option value="Drama Coordinator">Drama Coordinator</option>
+                  </select>
                 </div>
                 <div>
                   <label className="text-xs font-bold text-[#171717] block mb-1">Department:</label>

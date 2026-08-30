@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { MediaItem } from '../types';
-import { 
-  Play, 
-  Clock, 
-  Tv, 
-  ArrowRight, 
-  Sparkles, 
-  X, 
+import {
+  Play,
+  Clock,
+  Tv,
+  ArrowRight,
+  Sparkles,
+  X,
   Search,
   CheckCircle,
   Share2,
@@ -16,7 +16,9 @@ import {
   Youtube,
   Radio,
   SlidersHorizontal,
-  Flame
+  Flame,
+  Instagram,
+  Send
 } from 'lucide-react';
 import { extractYouTubeId, getYouTubeEmbedUrl, getYouTubeThumbnail } from '../lib/youtube';
 
@@ -64,8 +66,8 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
   const filteredMedia = mediaList.filter((item) => {
     const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.minister.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.description.toLowerCase().includes(searchQuery.toLowerCase());
+      item.minister.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
@@ -76,7 +78,7 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
   return (
     <section id="media" className="py-16 sm:py-24 bg-[#FAFAFA] border-b border-[#E5E5E5]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-12">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FDECEC] text-[#8B0000] text-xs font-bold uppercase tracking-wider mb-3 border border-[#F8D0D0]">
@@ -111,11 +113,10 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                      selectedCategory === cat
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${selectedCategory === cat
                         ? 'bg-[#B5121B] text-white shadow-xs'
                         : 'bg-white text-[#666666] hover:text-[#171717] hover:bg-[#E5E5E5] border border-[#E5E5E5]'
-                    }`}
+                      }`}
                   >
                     {cat}
                   </button>
@@ -161,10 +162,10 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
 
             {/* Layout: First item is large Hero Video, next 4 are prominent grid */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              
+
               {/* #1 Main Spotlight Card */}
               {topFive[0] && (
-                <div 
+                <div
                   onClick={() => setActiveVideoModal(topFive[0])}
                   className="lg:col-span-7 bg-white rounded-3xl border-2 border-[#B5121B]/30 hover:border-[#B5121B] overflow-hidden shadow-xs hover:shadow-xl transition-all cursor-pointer group flex flex-col justify-between"
                 >
@@ -176,7 +177,7 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
                       referrerPolicy="no-referrer"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#171717]/90 via-[#171717]/20 to-transparent" />
-                    
+
                     <div className="absolute top-4 left-4 flex items-center gap-2">
                       <span className="text-xs font-black uppercase tracking-wider bg-[#B5121B] text-white px-3 py-1 rounded-full shadow-md flex items-center gap-1.5">
                         <Flame className="w-3.5 h-3.5 fill-white" />
@@ -232,7 +233,7 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#171717]/80 via-transparent to-transparent" />
-                      
+
                       <div className="absolute top-2 left-2">
                         <span className="text-[10px] font-black uppercase bg-[#B5121B] text-white px-2 py-0.5 rounded shadow-xs">
                           {item.category}
@@ -292,7 +293,7 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
                       referrerPolicy="no-referrer"
                     />
                     <div className="absolute inset-0 bg-black/30 group-hover:bg-transparent transition-colors" />
-                    
+
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="w-8 h-8 rounded-full bg-[#B5121B] text-white flex items-center justify-center shadow group-hover:scale-110 transition-transform">
                         <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
@@ -318,6 +319,20 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
                 </div>
               ))}
             </div>
+
+            {/* YouTube Channel Redirect Call */}
+            <div className="text-center pt-8">
+              <a
+                href="https://www.youtube.com/@jccf_futa"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-3 bg-[#B5121B] hover:bg-[#8B0000] text-white font-bold text-xs rounded-xl shadow-xs hover:shadow-md transition-all inline-flex items-center gap-2 cursor-pointer hover:scale-105"
+              >
+                <Youtube className="w-4 h-4" />
+                <span>Check YouTube Channel for All Past Videos</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
           </div>
         )}
 
@@ -334,19 +349,64 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
           </div>
         )}
 
+        {/* Instagram, Telegram & YouTube call */}
+        <div className="mt-12 p-6 bg-gradient-to-br from-[#8B0000] via-[#A30F16] to-[#B5121B] border border-[#B5121B]/30 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6 text-left max-w-4xl mx-auto shadow-md relative overflow-hidden group">
+          {/* Decorative Back Light */}
+          <div className="absolute -top-12 -right-12 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
+
+          <div className="space-y-1 relative z-10">
+            <h4 className="text-sm font-black text-white uppercase tracking-wider font-heading flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Explore More Media Channels</span>
+            </h4>
+            <p className="text-[11px] sm:text-xs text-white/90 font-medium leading-relaxed max-w-xl">
+              Check out our Instagram feed for photos, join our Telegram channel to download sermon audios, or visit our YouTube channel to view the complete archive of past videos.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 relative z-10">
+            <a
+              href="https://www.instagram.com/jccffuta_gram?igsh=MXJ0djVtYnBhNmgyNQ=="
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 rounded-xl bg-white hover:bg-[#FCE8ED] text-[#E1306C] hover:scale-105 text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow-md"
+            >
+              <Instagram className="w-3.5 h-3.5" />
+              <span>Instagram (Photos & Videos)</span>
+            </a>
+            <a
+              href="https://t.me/jccf_futa"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 rounded-xl bg-white hover:bg-[#E6F3FA] text-[#0088cc] hover:scale-105 text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow-md"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Telegram (Sermon Audios)</span>
+            </a>
+            {/* <a 
+              href="https://www.youtube.com/@jccf_futa" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="px-4 py-2 rounded-xl bg-white hover:bg-[#FEECEC] text-[#FF0000] hover:scale-105 text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow-md"
+            >
+              <Youtube className="w-3.5 h-3.5" />
+              <span>YouTube (All Past Videos)</span>
+            </a> */}
+          </div>
+        </div>
+
       </div>
 
       {/* Video Playback Modal */}
       {activeVideoModal && (
-        <div 
+        <div
           onClick={() => setActiveVideoModal(null)}
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#171717]/85 backdrop-blur-xs animate-in fade-in overflow-y-auto"
         >
-          <div 
+          <div
             onClick={(e) => e.stopPropagation()}
             className="bg-white rounded-2xl sm:rounded-3xl max-w-3xl w-full overflow-hidden shadow-2xl border border-[#E5E5E5] flex flex-col max-h-[90vh] my-auto"
           >
-            
+
             {/* Sticky Modal Header with Accessible Close Button */}
             <div className="p-3.5 sm:p-4.5 flex items-center justify-between border-b border-[#E5E5E5] bg-[#FAFAFA] shrink-0 sticky top-0 z-10">
               <div className="min-w-0 pr-2">

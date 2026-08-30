@@ -28,13 +28,40 @@ export const ExecutivesSection: React.FC<ExecutivesSectionProps> = ({
   const [activeTab, setActiveTab] = useState<'current' | 'historical'>('current');
   const [searchQuery, setSearchQuery] = useState('');
 
+  const HOUSEHOLD_POSITIONS = [
+    'President',
+    'Vice President',
+    'General Secretary',
+    'Prayer Coordinator',
+    'Sister Coordinator',
+    'Financial Secretary',
+    'PRO',
+    'Chief Usher',
+    'Organizing Coordinator',
+    'Choir Coordinator',
+    'Drama Coordinator'
+  ];
+
+  const sortExecutives = (list: ExecutiveLeader[]) => {
+    return [...list].sort((a, b) => {
+      const idxA = HOUSEHOLD_POSITIONS.findIndex(pos => a.office.toLowerCase().trim() === pos.toLowerCase().trim());
+      const idxB = HOUSEHOLD_POSITIONS.findIndex(pos => b.office.toLowerCase().trim() === pos.toLowerCase().trim());
+      const sortA = idxA === -1 ? 999 : idxA;
+      const sortB = idxB === -1 ? 999 : idxB;
+      return sortA - sortB;
+    });
+  };
+
   const filteredExecutives = executives.filter((exec) => {
     return exec.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
            exec.office.toLowerCase().includes(searchQuery.toLowerCase()) ||
            exec.department.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  const displayedExecutives = showAll ? filteredExecutives : filteredExecutives.slice(0, 4);
+  const sortedFiltered = sortExecutives(filteredExecutives);
+  const president = sortedFiltered.find(e => e.office.toLowerCase().trim() === 'president');
+  const otherHousehold = sortedFiltered.filter(e => e.office.toLowerCase().trim() !== 'president');
+  const displayedOthers = showAll ? otherHousehold : otherHousehold.slice(0, 3);
 
   return (
     <section id="executives" className="py-16 sm:py-24 bg-[#FAFAFA] border-b border-[#E5E5E5]">
@@ -44,10 +71,10 @@ export const ExecutivesSection: React.FC<ExecutivesSectionProps> = ({
         <div className="text-center max-w-3xl mx-auto mb-12">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FDECEC] text-[#8B0000] text-xs font-bold uppercase tracking-wider mb-3 border border-[#F8D0D0]">
             <Award className="w-3.5 h-3.5 text-[#B5121B]" />
-            <span>Central Executive Council (CEC)</span>
+            <span>JCCF Household</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-[#171717] font-heading tracking-tight">
-            Meet the Executive Council
+            Meet the JCCF Household
           </h2>
           <p className="text-[#666666] mt-3 text-sm sm:text-base leading-relaxed">
             Dedicated student servant leaders steering the spiritual, ministerial, and administrative affairs of JCCF FUTA for the 2026/2027 session.
@@ -66,7 +93,7 @@ export const ExecutivesSection: React.FC<ExecutivesSectionProps> = ({
                     : 'text-[#666666] hover:text-[#171717]'
                 }`}
               >
-                Current CEC ({executives.length})
+                Current Household ({executives.length})
               </button>
               <button
                 onClick={() => setActiveTab('historical')}
@@ -76,85 +103,152 @@ export const ExecutivesSection: React.FC<ExecutivesSectionProps> = ({
                     : 'text-[#666666] hover:text-[#171717]'
                 }`}
               >
-                Past Presidents & Historical CEC ({historicalExecutives.length})
+                Past Presidents & Historical Household ({historicalExecutives.length})
               </button>
             </div>
           </div>
         )}
 
-        {/* Current CEC Grid */}
+        {/* Current Household Grid */}
         {(!showAll || activeTab === 'current') && (
           <div>
-            {displayedExecutives.length === 0 ? (
+            {sortedFiltered.length === 0 ? (
               <div className="bg-white rounded-3xl border border-[#E5E5E5] p-12 text-center max-w-xl mx-auto shadow-xs">
                 <ShieldCheck className="w-12 h-12 text-[#B5121B] mx-auto mb-3" />
-                <h3 className="text-base font-bold text-[#171717]">No Executive Profiles Listed</h3>
-                <p className="text-xs text-[#666666] mt-1">Executive leadership for this session is being confirmed by the election and central committee.</p>
+                <h3 className="text-base font-bold text-[#171717]">No Household Profiles Listed</h3>
+                <p className="text-xs text-[#666666] mt-1">Household leadership for this session is being confirmed by the election and central committee.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {displayedExecutives.map((exec) => (
-                  <div
-                    key={exec.id}
-                    className="bg-white rounded-2xl border border-[#E5E5E5] hover:border-[#B5121B] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
-                  >
-                    <div>
-                      {/* Portrait Image */}
-                      <div className="h-64 relative overflow-hidden bg-[#171717]">
+              <div className="space-y-10">
+                {/* 1. President: Longer and wider space */}
+                {president && (
+                  <div className="max-w-2xl mx-auto">
+                    <div className="bg-white rounded-3xl border-2 border-[#B5121B]/40 hover:border-[#B5121B] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col sm:flex-row group text-left">
+                      {/* Portrait Image (Longer/Wider) */}
+                      <div className="sm:w-1/2 h-80 relative overflow-hidden bg-[#171717] shrink-0">
                         <img
-                          src={exec.photoUrl}
-                          alt={exec.name}
+                          src={president.photoUrl}
+                          alt={president.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           referrerPolicy="no-referrer"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#171717]/90 via-[#171717]/20 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#171717]/95 via-[#171717]/30 to-transparent" />
                         
                         {/* Office Tag */}
-                        <div className="absolute bottom-3 left-3 right-3">
-                          <span className="text-[10px] font-black uppercase tracking-wider bg-[#B5121B] text-white px-2 py-0.5 rounded shadow-xs inline-block mb-1">
-                            {exec.office}
+                        <div className="absolute bottom-4 left-4 right-4">
+                          <span className="text-[10px] font-black uppercase tracking-wider bg-[#B5121B] text-white px-2.5 py-1 rounded-full shadow-md inline-block mb-1.5">
+                            {president.office}
                           </span>
-                          <h3 className="text-base font-bold font-heading text-white line-clamp-1">
-                            {exec.name}
+                          <h3 className="text-lg font-black font-heading text-white line-clamp-2">
+                            {president.name}
                           </h3>
                         </div>
                       </div>
 
                       {/* Body details */}
-                      <div className="p-4 space-y-2.5 text-left">
-                        <div className="flex items-center gap-1.5 text-xs text-[#666666]">
-                          <GraduationCap className="w-3.5 h-3.5 text-[#B5121B] shrink-0" />
-                          <span className="font-semibold text-[#171717]">{exec.level} • {exec.department}</span>
+                      <div className="p-6 flex flex-col justify-between flex-1">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-1.5 text-xs text-[#666666]">
+                            <GraduationCap className="w-4 h-4 text-[#B5121B] shrink-0" />
+                            <span className="font-semibold text-[#171717]">{president.level} • {president.department}</span>
+                          </div>
+
+                          {president.quote && (
+                            <p className="text-xs text-[#666666] italic leading-relaxed bg-[#FAFAFA] p-3.5 rounded-xl border border-[#E5E5E5]">
+                              “{president.quote}”
+                            </p>
+                          )}
                         </div>
 
-                        {exec.quote && (
-                          <p className="text-xs text-[#666666] italic line-clamp-3 bg-[#FAFAFA] p-2.5 rounded-xl border border-[#E5E5E5]">
-                            “{exec.quote}”
-                          </p>
-                        )}
+                        {/* Contacts */}
+                        <div className="p-4 pt-0 border-t border-[#E5E5E5] mt-4 flex items-center justify-between text-xs text-[#666666] pt-3">
+                          <a
+                            href={`mailto:${president.email}`}
+                            className="hover:text-[#B5121B] flex items-center gap-1 font-medium transition-colors"
+                          >
+                            <Mail className="w-3.5 h-3.5 text-[#B5121B]" />
+                            <span>Email</span>
+                          </a>
+                          <a
+                            href={`tel:${president.phone}`}
+                            className="hover:text-[#B5121B] flex items-center gap-1 font-medium transition-colors"
+                          >
+                            <Phone className="w-3.5 h-3.5 text-[#B5121B]" />
+                            <span>Contact</span>
+                          </a>
+                        </div>
                       </div>
                     </div>
-
-                    {/* Footer contacts */}
-                    <div className="p-4 pt-0 border-t border-[#E5E5E5] mt-2 flex items-center justify-between text-xs text-[#666666]">
-                      <a
-                        href={`mailto:${exec.email}`}
-                        className="hover:text-[#B5121B] flex items-center gap-1 font-medium transition-colors"
-                      >
-                        <Mail className="w-3 h-3 text-[#B5121B]" />
-                        <span>Email</span>
-                      </a>
-                      <a
-                        href={`tel:${exec.phone}`}
-                        className="hover:text-[#B5121B] flex items-center gap-1 font-medium transition-colors"
-                      >
-                        <Phone className="w-3 h-3 text-[#B5121B]" />
-                        <span>Contact</span>
-                      </a>
-                    </div>
-
                   </div>
-                ))}
+                )}
+
+                {/* 2. Other Household Members */}
+                {displayedOthers.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {displayedOthers.map((exec) => (
+                      <div
+                        key={exec.id}
+                        className="bg-white rounded-2xl border border-[#E5E5E5] hover:border-[#B5121B] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+                      >
+                        <div>
+                          {/* Portrait Image */}
+                          <div className="h-64 relative overflow-hidden bg-[#171717]">
+                            <img
+                              src={exec.photoUrl}
+                              alt={exec.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#171717]/90 via-[#171717]/20 to-transparent" />
+                            
+                            {/* Office Tag */}
+                            <div className="absolute bottom-3 left-3 right-3">
+                              <span className="text-[10px] font-black uppercase tracking-wider bg-[#B5121B] text-white px-2 py-0.5 rounded shadow-xs inline-block mb-1">
+                                {exec.office}
+                              </span>
+                              <h3 className="text-base font-bold font-heading text-white line-clamp-1">
+                                {exec.name}
+                              </h3>
+                            </div>
+                          </div>
+
+                          {/* Body details */}
+                          <div className="p-4 space-y-2.5 text-left">
+                            <div className="flex items-center gap-1.5 text-xs text-[#666666]">
+                              <GraduationCap className="w-3.5 h-3.5 text-[#B5121B] shrink-0" />
+                              <span className="font-semibold text-[#171717]">{exec.level} • {exec.department}</span>
+                            </div>
+
+                            {exec.quote && (
+                              <p className="text-xs text-[#666666] italic line-clamp-3 bg-[#FAFAFA] p-2.5 rounded-xl border border-[#E5E5E5]">
+                                “{exec.quote}”
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Footer contacts */}
+                        <div className="p-4 pt-0 border-t border-[#E5E5E5] mt-2 flex items-center justify-between text-xs text-[#666666]">
+                          <a
+                            href={`mailto:${exec.email}`}
+                            className="hover:text-[#B5121B] flex items-center gap-1 font-medium transition-colors"
+                          >
+                            <Mail className="w-3 h-3 text-[#B5121B]" />
+                            <span>Email</span>
+                          </a>
+                          <a
+                            href={`tel:${exec.phone}`}
+                            className="hover:text-[#B5121B] flex items-center gap-1 font-medium transition-colors"
+                          >
+                            <Phone className="w-3 h-3 text-[#B5121B]" />
+                            <span>Contact</span>
+                          </a>
+                        </div>
+
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
