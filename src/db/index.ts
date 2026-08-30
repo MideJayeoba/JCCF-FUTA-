@@ -145,6 +145,7 @@ export const initDatabaseTables = async () => {
         id SERIAL PRIMARY KEY,
         tenure TEXT NOT NULL,
         generation_name TEXT NOT NULL,
+        generation TEXT,
         theme TEXT,
         president TEXT NOT NULL,
         executives_list TEXT,
@@ -155,6 +156,8 @@ export const initDatabaseTables = async () => {
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
+
+      ALTER TABLE historical_executives ADD COLUMN IF NOT EXISTS generation TEXT;
 
       CREATE TABLE IF NOT EXISTS media (
         id SERIAL PRIMARY KEY,

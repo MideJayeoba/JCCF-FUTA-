@@ -95,6 +95,7 @@ export const historicalExecutives = pgTable('historical_executives', {
   id: serial('id').primaryKey(),
   tenure: text('tenure').notNull(), // e.g. "2024/2025" or "1999/2000"
   generationName: text('generation_name').notNull(), // e.g. "The Trailblazers"
+  generation: text('generation'), // e.g. "28th Generation"
   theme: text('theme'), // e.g. "Generation of Glory"
   president: text('president').notNull(),
   executivesList: text('executives_list'), // summary of other executives

@@ -195,8 +195,19 @@ export const ExecutivesSection: React.FC<ExecutivesSectionProps> = ({
                       {item.president}
                     </h4>
                     <p className="text-xs text-[#666666]">President • {item.tenure} Administration</p>
+                    {item.generationName && (
+                      <p className="text-[11px] font-bold text-[#B5121B] mt-0.5">
+                        {item.generation ? `${item.generation}: ` : ''}{item.generationName}
+                      </p>
+                    )}
                   </div>
                 </div>
+
+                {item.executivesList && (
+                  <div className="text-[11px] text-[#666666] pt-1 leading-relaxed">
+                    <strong>Executive Officers:</strong> {item.executivesList}
+                  </div>
+                )}
 
                 {item.keyAchievements && item.keyAchievements.length > 0 && (
                   <div className="space-y-1.5 pt-2 border-t border-[#E5E5E5]">

@@ -121,6 +121,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
     addAuthorizedAdmin,
     removeAuthorizedAdmin,
     updateSecurityPins,
+    changeAdminPassword,
+    performHandover,
+    historicalExecutives,
+    addHistoricalExecutive,
+    updateHistoricalExecutive,
+    deleteHistoricalExecutive,
 
     auditLogs,
     isSuperAdmin: appIsSuperAdmin,
@@ -152,6 +158,136 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
   const [isAddingAdmin, setIsAddingAdmin] = useState(false);
   const [adminActionFeedback, setAdminActionFeedback] = useState('');
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
+
+  // Password Management States
+  const [selectedAdminForPassword, setSelectedAdminForPassword] = useState<string | null>(null);
+  const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [passwordChangeMessage, setPasswordChangeMessage] = useState<{ success?: boolean; text: string } | null>(null);
+
+  const handlePasswordChangeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAdminForPassword) return;
+    if (newAdminPassword.length < 8) {
+      setPasswordChangeMessage({ success: false, text: 'Password must be at least 8 characters long.' });
+      return;
+    }
+    try {
+      const res = await changeAdminPassword(selectedAdminForPassword, newAdminPassword);
+      if (res.success) {
+        setPasswordChangeMessage({ success: true, text: res.message });
+        setNewAdminPassword('');
+        setTimeout(() => {
+          setSelectedAdminForPassword(null);
+          setPasswordChangeMessage(null);
+        }, 3000);
+      } else {
+        setPasswordChangeMessage({ success: false, text: res.message });
+      }
+    } catch (err: any) {
+      setPasswordChangeMessage({ success: false, text: err.message || 'Failed to update password.' });
+    }
+  };
+
+  // Handover Modal State
+  const [isHandoverModalOpen, setIsHandoverModalOpen] = useState(false);
+  const [handoverGenName, setHandoverGenName] = useState('');
+  const [handoverGenNo, setHandoverGenNo] = useState('');
+  const [handoverTenure, setHandoverTenure] = useState('');
+  const [handoverTheme, setHandoverTheme] = useState('');
+  const [handoverAchievements, setHandoverAchievements] = useState('');
+  const [handoverPhoto, setHandoverPhoto] = useState('');
+  const [handoverFeedback, setHandoverFeedback] = useState<{ success?: boolean; text: string } | null>(null);
+  const [isSubmittingHandover, setIsSubmittingHandover] = useState(false);
+
+  const handleHandoverSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!handoverGenName || !handoverGenNo || !handoverTenure) {
+      setHandoverFeedback({ success: false, text: 'Please fill in all required fields.' });
+      return;
+    }
+    if (executives.length === 0) {
+      setHandoverFeedback({ success: false, text: 'No current executives found to perform handover.' });
+      return;
+    }
+    if (!confirm('WARNING: Doing a handover will ARCHIVE all current executives as Past Executives and DELETE them from the active roster. This action CANNOT be undone. Are you sure you want to proceed?')) {
+      return;
+    }
+
+    setIsSubmittingHandover(true);
+    setHandoverFeedback(null);
+    try {
+      const achievementsArray = handoverAchievements
+        ? handoverAchievements.split('\n').map(a => a.trim()).filter(Boolean)
+        : [];
+
+      const res = await performHandover({
+        generationName: handoverGenName.trim(),
+        generation: handoverGenNo.trim(),
+        tenure: handoverTenure.trim(),
+        theme: handoverTheme.trim(),
+        keyAchievements: achievementsArray,
+        photoUrl: handoverPhoto.trim()
+      });
+
+      if (res.success) {
+        setHandoverFeedback({ success: true, text: res.message });
+        setHandoverGenName('');
+        setHandoverGenNo('');
+        setHandoverTenure('');
+        setHandoverTheme('');
+        setHandoverAchievements('');
+        setHandoverPhoto('');
+        setTimeout(() => {
+          setIsHandoverModalOpen(false);
+          setHandoverFeedback(null);
+        }, 3000);
+      } else {
+        setHandoverFeedback({ success: false, text: res.message });
+      }
+    } catch (err: any) {
+      setHandoverFeedback({ success: false, text: err.message || 'Handover processing failed.' });
+    } finally {
+      setIsSubmittingHandover(false);
+    }
+  };
+
+  // Historical Executive States
+  const [historicalModalMode, setHistoricalModalMode] = useState<'create' | 'edit' | null>(null);
+  const [activeHistoricalExecutive, setActiveHistoricalExecutive] = useState<Partial<HistoricalExecutive>>({});
+
+  const handleHistoricalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeHistoricalExecutive.tenure || !activeHistoricalExecutive.generationName || !activeHistoricalExecutive.president) {
+      alert('Tenure, Generation Name, and President name are required.');
+      return;
+    }
+
+    try {
+      const payload: HistoricalExecutive = {
+        id: activeHistoricalExecutive.id,
+        tenure: activeHistoricalExecutive.tenure.trim(),
+        generationName: activeHistoricalExecutive.generationName.trim(),
+        generation: activeHistoricalExecutive.generation?.trim() || '',
+        theme: activeHistoricalExecutive.theme?.trim() || '',
+        president: activeHistoricalExecutive.president.trim(),
+        executivesList: activeHistoricalExecutive.executivesList?.trim() || '',
+        mission: activeHistoricalExecutive.mission?.trim() || '',
+        vision: activeHistoricalExecutive.vision?.trim() || '',
+        keyAchievements: activeHistoricalExecutive.keyAchievements || [],
+        photoUrl: activeHistoricalExecutive.photoUrl?.trim() || ''
+      };
+
+      if (historicalModalMode === 'edit' && activeHistoricalExecutive.id) {
+        await updateHistoricalExecutive(activeHistoricalExecutive.id, payload);
+      } else {
+        await addHistoricalExecutive(payload);
+      }
+      setHistoricalModalMode(null);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save historical executive record.');
+    }
+  };
 
   // Modals - Announcement
   const [announcementModalMode, setAnnouncementModalMode] = useState<'create' | 'edit' | null>(null);
@@ -1245,20 +1381,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                     </p>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      setActiveExecutive({
-                        level: '500L',
-                        department: 'FUTA',
-                        tenure: '2026/2027'
-                      });
-                      setExecutiveModalMode('create');
-                    }}
-                    className="px-4 py-2.5 bg-[#B5121B] hover:bg-[#8B0000] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Executive Officer</span>
-                  </button>
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      onClick={() => {
+                        setIsHandoverModalOpen(true);
+                      }}
+                      className="px-4 py-2.5 bg-[#171717] hover:bg-[#262626] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer border border-[#171717]"
+                      title="Perform Executive Handover and archive to Past Generation list"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Archive & Handover</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setActiveExecutive({
+                          level: '500L',
+                          department: 'FUTA',
+                          tenure: '2026/2027'
+                        });
+                        setExecutiveModalMode('create');
+                      }}
+                      className="px-4 py-2.5 bg-[#B5121B] hover:bg-[#8B0000] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Executive Officer</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
@@ -1302,6 +1451,104 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                     </div>
                   ))}
                 </div>
+
+                {/* Past Generations / Historical Archives */}
+                <div className="border-t border-[#E5E5E5] pt-6 mt-6 space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                      <h3 className="text-md font-bold text-[#171717] flex items-center gap-2">
+                        <Award className="w-4 h-4 text-[#B5121B]" />
+                        <span>Generational History & Past Councils</span>
+                      </h3>
+                      <p className="text-xs text-[#666666]">
+                        Archived administrations, generational names, tenure years, and achievements.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setActiveHistoricalExecutive({
+                          tenure: '2025/2026',
+                          generationName: '',
+                          generation: '',
+                          president: '',
+                          executivesList: '',
+                          keyAchievements: []
+                        });
+                        setHistoricalModalMode('create');
+                      }}
+                      className="px-3.5 py-2 border border-[#E5E5E5] hover:bg-[#FAFAFA] text-[#171717] text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-[#B5121B]" />
+                      <span>Input Past Executive Record</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {historicalExecutives.map((item) => (
+                      <div
+                        key={item.id || item.tenure}
+                        className="p-4 bg-[#FAFAFA] rounded-2xl border border-[#E5E5E5] flex flex-col justify-between space-y-3"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex justify-between items-start gap-2">
+                            <div>
+                              <span className="text-[10px] font-bold text-[#B5121B] tracking-wider uppercase bg-[#B5121B]/5 border border-[#B5121B]/10 px-2 py-0.5 rounded-md">
+                                {item.generation || 'Past Gen'}
+                              </span>
+                              <h4 className="text-sm font-black text-[#171717] mt-1.5">{item.generationName}</h4>
+                            </div>
+                            <span className="text-xs font-semibold text-[#666666] font-mono">{item.tenure}</span>
+                          </div>
+
+                          <div className="text-xs text-[#171717] space-y-1 pt-1.5">
+                            <div><strong>President:</strong> {item.president}</div>
+                            {item.executivesList && (
+                              <div className="text-[11px] text-[#666666] line-clamp-2">
+                                <strong>Officers:</strong> {item.executivesList}
+                              </div>
+                            )}
+                            {item.theme && (
+                              <div className="text-[11px] italic text-[#666666]">
+                                &ldquo;{item.theme}&rdquo;
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between border-t border-[#E5E5E5] pt-3 mt-1">
+                          <span className="text-[10px] text-[#666666] font-semibold">
+                            {item.keyAchievements?.length || 0} achievements recorded
+                          </span>
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={() => {
+                                setActiveHistoricalExecutive(item);
+                                setHistoricalModalMode('edit');
+                              }}
+                              className="p-1.5 text-[#666666] hover:text-[#B5121B] bg-white rounded-lg border border-[#E5E5E5] transition-colors cursor-pointer shrink-0"
+                              title="Edit Record"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`Delete historical record for "${item.generationName}" (${item.tenure})?`)) {
+                                  deleteHistoricalExecutive(item.id || item.tenure);
+                                }
+                              }}
+                              className="p-1.5 text-[#666666] hover:text-[#B5121B] bg-white rounded-lg border border-[#E5E5E5] transition-colors cursor-pointer shrink-0"
+                              title="Delete Record"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
               </div>
             )}
 
@@ -1729,10 +1976,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                                 {admin.addedAt || 'Permanent'}
                               </td>
 
-                              <td className="p-3 text-right">
+                              <td className="p-3 text-right flex justify-end gap-1.5 items-center">
+                                <button
+                                  onClick={() => setSelectedAdminForPassword(admin.email)}
+                                  className="px-2.5 py-1 bg-[#FAFAFA] hover:bg-[#E5E5E5] text-[#171717] rounded-lg text-[10px] font-bold transition-colors cursor-pointer border border-[#E5E5E5] flex items-center gap-1"
+                                  title="Set or Change Password"
+                                >
+                                  <KeyRound className="w-3.5 h-3.5 text-[#B5121B]" />
+                                  <span>Password</span>
+                                </button>
                                 {isPrimary ? (
-                                  <span className="text-[10px] text-[#666666] font-semibold italic">
-                                    Permanent Root
+                                  <span className="text-[10px] text-[#666666] font-semibold italic p-1">
+                                    Primary Root
                                   </span>
                                 ) : (
                                   <button
@@ -2847,6 +3102,362 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
               >
                 {resourceModalMode === 'edit' ? 'Update Resource' : 'Publish Resource'}
               </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Password Management Modal */}
+      {selectedAdminForPassword && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full border border-[#E5E5E5] shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-bold text-[#171717] flex items-center gap-2">
+                <Key className="w-4 h-4 text-[#B5121B]" />
+                <span>Set Administrator Password</span>
+              </h3>
+              <button 
+                onClick={() => { setSelectedAdminForPassword(null); setPasswordChangeMessage(null); }} 
+                className="text-[#666666] hover:text-[#171717] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <form onSubmit={handlePasswordChangeSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-[#666666] uppercase mb-1">
+                  Administrator Email
+                </label>
+                <input
+                  type="text"
+                  readOnly
+                  value={selectedAdminForPassword}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#E5E5E5] bg-[#FAFAFA] text-xs text-[#666666] outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-[#666666] uppercase mb-1">
+                  New Password (min 8 chars)
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={newAdminPassword}
+                  onChange={(e) => setNewAdminPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#E5E5E5] text-xs text-[#171717] outline-none focus:border-[#B5121B] transition-colors"
+                />
+              </div>
+
+              {passwordChangeMessage && (
+                <div className={`text-[11px] p-2.5 rounded-lg ${passwordChangeMessage.success ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`}>
+                  {passwordChangeMessage.text}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setSelectedAdminForPassword(null); setPasswordChangeMessage(null); }}
+                  className="px-4 py-2 border border-[#E5E5E5] rounded-xl text-xs font-bold hover:bg-[#FAFAFA] transition-colors cursor-pointer text-[#666666]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#B5121B] hover:bg-[#900E14] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Update Password
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Handover / Archive Modal */}
+      {isHandoverModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center p-4 z-50 animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full border border-[#E5E5E5] shadow-xl my-8">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-bold text-[#171717] flex items-center gap-2">
+                <RotateCcw className="w-4 h-4 text-[#B5121B]" />
+                <span>Executive Council Handover Portal</span>
+              </h3>
+              <button 
+                onClick={() => { setIsHandoverModalOpen(false); setHandoverFeedback(null); }} 
+                className="text-[#666666] hover:text-[#171717] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleHandoverSubmit} className="space-y-4 text-xs">
+              <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl">
+                <strong>Important Notice:</strong> Handover moves all current executives ({executives.length}) to the history records. This will archive their details and clear the active executives list to prepare for the incoming administration.
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-[#666666] uppercase mb-1">
+                    Generation Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Restorers Generation"
+                    value={handoverGenName}
+                    onChange={(e) => setHandoverGenName(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E5E5E5] rounded-xl text-[#171717] outline-none focus:border-[#B5121B]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-[#666666] uppercase mb-1">
+                    Generation Number *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 28th Generation"
+                    value={handoverGenNo}
+                    onChange={(e) => setHandoverGenNo(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E5E5E5] rounded-xl text-[#171717] outline-none focus:border-[#B5121B]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-[#666666] uppercase mb-1">
+                    Tenure / Year *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 2025/2026"
+                    value={handoverTenure}
+                    onChange={(e) => setHandoverTenure(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E5E5E5] rounded-xl text-[#171717] outline-none focus:border-[#B5121B]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-[#666666] uppercase mb-1">
+                    Generational Theme
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Restoring the Foundations"
+                    value={handoverTheme}
+                    onChange={(e) => setHandoverTheme(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E5E5E5] rounded-xl text-[#171717] outline-none focus:border-[#B5121B]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-[#666666] uppercase mb-1">
+                  Generational Portrait/Photo URL
+                </label>
+                <input
+                  type="text"
+                  placeholder="https://example.com/generation-photo.jpg"
+                  value={handoverPhoto}
+                  onChange={(e) => setHandoverPhoto(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#E5E5E5] rounded-xl text-[#171717] outline-none focus:border-[#B5121B]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-[#666666] uppercase mb-1">
+                  Key Achievements (one per line)
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="e.g. Successful execution of Mega Praise 2026&#10;Completion of chapel extension project&#10;Seeding database migration routines"
+                  value={handoverAchievements}
+                  onChange={(e) => setHandoverAchievements(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#E5E5E5] rounded-xl text-[#171717] outline-none focus:border-[#B5121B] font-sans"
+                />
+              </div>
+
+              {handoverFeedback && (
+                <div className={`text-[11px] p-2.5 rounded-lg ${handoverFeedback.success ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`}>
+                  {handoverFeedback.text}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setIsHandoverModalOpen(false); setHandoverFeedback(null); }}
+                  className="px-4 py-2 border border-[#E5E5E5] rounded-xl text-xs font-bold hover:bg-[#FAFAFA] transition-colors cursor-pointer text-[#666666]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingHandover}
+                  className="px-4 py-2 bg-[#B5121B] hover:bg-[#900E14] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:bg-gray-400"
+                >
+                  {isSubmittingHandover ? 'Processing...' : 'Complete Handover'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Historical Executive Modal */}
+      {historicalModalMode && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center p-4 z-50 animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full border border-[#E5E5E5] shadow-xl my-8">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-bold text-[#171717] flex items-center gap-2">
+                <Award className="w-4 h-4 text-[#B5121B]" />
+                <span>{historicalModalMode === 'edit' ? 'Edit Past Generation Record' : 'Input Past Generation Record'}</span>
+              </h3>
+              <button 
+                onClick={() => setHistoricalModalMode(null)} 
+                className="text-[#666666] hover:text-[#171717] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleHistoricalSubmit} className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-[#666666] uppercase mb-1">
+                    Generation Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Restorers Generation"
+                    value={activeHistoricalExecutive.generationName || ''}
+                    onChange={(e) => setActiveHistoricalExecutive({ ...activeHistoricalExecutive, generationName: e.target.value })}
+                    className="w-full px-3 py-2 border border-[#E5E5E5] rounded-xl text-[#171717] outline-none focus:border-[#B5121B]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-[#666666] uppercase mb-1">
+                    Generation Number
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 28th Generation"
+                    value={activeHistoricalExecutive.generation || ''}
+                    onChange={(e) => setActiveHistoricalExecutive({ ...activeHistoricalExecutive, generation: e.target.value })}
+                    className="w-full px-3 py-2 border border-[#E5E5E5] rounded-xl text-[#171717] outline-none focus:border-[#B5121B]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-[#666666] uppercase mb-1">
+                    Tenure / Year *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 2025/2026"
+                    value={activeHistoricalExecutive.tenure || ''}
+                    onChange={(e) => setActiveHistoricalExecutive({ ...activeHistoricalExecutive, tenure: e.target.value })}
+                    className="w-full px-3 py-2 border border-[#E5E5E5] rounded-xl text-[#171717] outline-none focus:border-[#B5121B]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-[#666666] uppercase mb-1">
+                    President Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Jayeoba Peace"
+                    value={activeHistoricalExecutive.president || ''}
+                    onChange={(e) => setActiveHistoricalExecutive({ ...activeHistoricalExecutive, president: e.target.value })}
+                    className="w-full px-3 py-2 border border-[#E5E5E5] rounded-xl text-[#171717] outline-none focus:border-[#B5121B]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-[#666666] uppercase mb-1">
+                  Generational Theme
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Restoring the Foundations"
+                  value={activeHistoricalExecutive.theme || ''}
+                  onChange={(e) => setActiveHistoricalExecutive({ ...activeHistoricalExecutive, theme: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E5E5E5] rounded-xl text-[#171717] outline-none focus:border-[#B5121B]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-[#666666] uppercase mb-1">
+                  Officer Members & Offices (e.g. 10 executives)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Officer A (Vice President), Officer B (Gen. Secretary), ..."
+                  value={activeHistoricalExecutive.executivesList || ''}
+                  onChange={(e) => setActiveHistoricalExecutive({ ...activeHistoricalExecutive, executivesList: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E5E5E5] rounded-xl text-[#171717] outline-none focus:border-[#B5121B] font-sans"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-[#666666] uppercase mb-1">
+                  Generational Portrait URL
+                </label>
+                <input
+                  type="text"
+                  placeholder="https://example.com/generation-photo.jpg"
+                  value={activeHistoricalExecutive.photoUrl || ''}
+                  onChange={(e) => setActiveHistoricalExecutive({ ...activeHistoricalExecutive, photoUrl: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E5E5E5] rounded-xl text-[#171717] outline-none focus:border-[#B5121B]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-[#666666] uppercase mb-1">
+                  Achievements (one per line)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Achievement 1&#10;Achievement 2"
+                  value={activeHistoricalExecutive.keyAchievements?.join('\n') || ''}
+                  onChange={(e) => setActiveHistoricalExecutive({ 
+                    ...activeHistoricalExecutive, 
+                    keyAchievements: e.target.value.split('\n').filter(Boolean) 
+                  })}
+                  className="w-full px-3 py-2 border border-[#E5E5E5] rounded-xl text-[#171717] outline-none focus:border-[#B5121B] font-sans"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setHistoricalModalMode(null)}
+                  className="px-4 py-2 border border-[#E5E5E5] rounded-xl text-xs font-bold hover:bg-[#FAFAFA] transition-colors cursor-pointer text-[#666666]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#B5121B] hover:bg-[#900E14] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  {historicalModalMode === 'edit' ? 'Update Record' : 'Save Record'}
+                </button>
+              </div>
             </form>
           </div>
         </div>

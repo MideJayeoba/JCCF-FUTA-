@@ -120,6 +120,7 @@ export interface HistoricalExecutive {
   id?: string;
   tenure: string; // Generation / Year of serving e.g. '2024/2025'
   generationName: string; // Generational Name e.g. 'The Trailblazers'
+  generation?: string; // e.g. '28th Generation'
   theme?: string; // Generational Theme / Slogan
   president: string; // President
   executivesList?: string; // Other executive members

@@ -71,6 +71,16 @@ interface AppContextType {
   addHistoricalExecutive: (item: HistoricalExecutive) => Promise<void>;
   updateHistoricalExecutive: (tenureOrId: string, item: Partial<HistoricalExecutive>) => Promise<void>;
   deleteHistoricalExecutive: (tenureOrId: string) => Promise<void>;
+  performHandover: (handoverData: {
+    generationName: string;
+    generation: string;
+    tenure: string;
+    theme?: string;
+    mission?: string;
+    vision?: string;
+    keyAchievements?: string[];
+    photoUrl?: string;
+  }) => Promise<{ success: boolean; message: string }>;
 
   // Resources
   resources: ResourceItem[];
@@ -105,6 +115,7 @@ interface AppContextType {
   addAuthorizedAdmin: (admin: { email: string; name: string; role: 'superadmin' | 'admin' | 'executive' }) => Promise<void>;
   removeAuthorizedAdmin: (email: string) => Promise<void>;
   updateSecurityPins: (pins: { superadminPin?: string; executivePin?: string }) => Promise<void>;
+  changeAdminPassword: (targetUidOrEmail: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
 
   // Audit Logs
   auditLogs: AuditLog[];
@@ -1159,6 +1170,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         body: JSON.stringify({
           tenure: item.tenure,
           generationName: item.generationName,
+          generation: item.generation,
           theme: item.theme,
           president: item.president,
           executivesList: item.executivesList,
@@ -1222,6 +1234,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     addAuditLog('Deleted past administration record', tenureOrId, 'delete');
+  };
+
+  const performHandover = async (handoverData: {
+    generationName: string;
+    generation: string;
+    tenure: string;
+    theme?: string;
+    mission?: string;
+    vision?: string;
+    keyAchievements?: string[];
+    photoUrl?: string;
+  }): Promise<{ success: boolean; message: string }> => {
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch('/api/admin/executives/handover', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(handoverData)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Handover process failed');
+      }
+
+      // Clear current executives in client state
+      setExecutives([]);
+      try {
+        localStorage.removeItem('jccf_executives');
+      } catch (_) {}
+
+      // Refresh data
+      await fetchDbData();
+
+      addAuditLog(`Completed official handover: ${handoverData.generationName} (${handoverData.tenure})`, 'Access Control & Security', 'auth');
+      return { success: true, message: data.message || 'Handover completed successfully.' };
+    } catch (err: any) {
+      console.warn('Handover failed:', err);
+      return { success: false, message: err.message || 'Failed to complete handover.' };
+    }
   };
 
   // --- RESOURCES CRUD (PostgreSQL) ---
@@ -1526,6 +1577,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addAuditLog('Updated Master Superadmin & Executive PINs', 'Access Control & Security', 'settings');
   };
 
+  const changeAdminPassword = async (targetUidOrEmail: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch('/api/admin/change-password', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          uid: targetUidOrEmail.includes('@') ? undefined : targetUidOrEmail,
+          email: targetUidOrEmail.includes('@') ? targetUidOrEmail : undefined,
+          password: newPassword
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update password');
+      }
+      addAuditLog(`Updated administrator password for ${targetUidOrEmail}`, 'Access Control & Security', 'settings');
+      return { success: true, message: data.message || 'Password successfully updated.' };
+    } catch (err: any) {
+      console.warn('Password update failed:', err);
+      return { success: false, message: err.message || 'Failed to update password.' };
+    }
+  };
+
   // --- RESET TO DEFAULTS ---
   const resetToFactoryDefaults = () => {
     setAnnouncements(ANNOUNCEMENTS);
@@ -1576,6 +1651,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addHistoricalExecutive,
         updateHistoricalExecutive,
         deleteHistoricalExecutive,
+        performHandover,
 
         resources,
         addResource,
@@ -1598,6 +1674,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addAuthorizedAdmin,
         removeAuthorizedAdmin,
         updateSecurityPins,
+        changeAdminPassword,
 
         auditLogs,
         addAuditLog,

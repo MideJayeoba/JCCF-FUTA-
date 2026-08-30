@@ -1329,6 +1329,7 @@ async function startServer() {
         id: String(item.id),
         tenure: item.tenure,
         generationName: item.generationName,
+        generation: item.generation || '',
         theme: item.theme || '',
         president: item.president,
         executivesList: item.executivesList || '',
@@ -1346,12 +1347,13 @@ async function startServer() {
 
   app.post('/api/historical-executives', requireAdmin, async (req, res) => {
     try {
-      const { tenure, generationName, theme, president, executivesList, mission, vision, keyAchievements, photoUrl } = req.body;
+      const { tenure, generationName, generation, theme, president, executivesList, mission, vision, keyAchievements, photoUrl } = req.body;
       const achStr = Array.isArray(keyAchievements) ? JSON.stringify(keyAchievements) : (typeof keyAchievements === 'string' ? JSON.stringify([keyAchievements]) : '[]');
       
       const result = await db.insert(historicalExecutives).values({
         tenure: tenure || '2024/2025',
         generationName: generationName || 'The Trailblazers',
+        generation: generation || '',
         theme: theme || '',
         president: president || 'Past President',
         executivesList: executivesList || '',
@@ -1366,6 +1368,7 @@ async function startServer() {
         id: String(created.id),
         tenure: created.tenure,
         generationName: created.generationName,
+        generation: created.generation || '',
         theme: created.theme,
         president: created.president,
         executivesList: created.executivesList,
@@ -1384,12 +1387,13 @@ async function startServer() {
     try {
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) return res.status(400).json({ error: 'Invalid ID' });
-      const { tenure, generationName, theme, president, executivesList, mission, vision, keyAchievements, photoUrl } = req.body;
+      const { tenure, generationName, generation, theme, president, executivesList, mission, vision, keyAchievements, photoUrl } = req.body;
       const achStr = Array.isArray(keyAchievements) ? JSON.stringify(keyAchievements) : (typeof keyAchievements === 'string' ? JSON.stringify([keyAchievements]) : undefined);
 
       const updateData: any = {
         tenure,
         generationName,
+        generation,
         theme,
         president,
         executivesList,
@@ -1408,6 +1412,7 @@ async function startServer() {
         id: String(updated.id),
         tenure: updated.tenure,
         generationName: updated.generationName,
+        generation: updated.generation || '',
         theme: updated.theme,
         president: updated.president,
         executivesList: updated.executivesList,
@@ -1419,6 +1424,57 @@ async function startServer() {
     } catch (error: any) {
       console.error('Error updating historical executive:', error);
       res.status(500).json({ error: 'Failed to update historical executive' });
+    }
+  });
+
+  // 8c. Handover Endpoint: Archiving current executives to past generation list
+  app.post('/api/admin/executives/handover', requireAdmin, async (req, res) => {
+    try {
+      const { generationName, generation, tenure, theme, mission, vision, keyAchievements, photoUrl } = req.body;
+      if (!generationName || !generation || !tenure) {
+        return res.status(400).json({ error: 'Generation Name, Generation (e.g. 28th Generation), and Tenure/Year (e.g. 2025/2026) are required.' });
+      }
+
+      // Fetch all current executives
+      const currentList = await db.select().from(executives);
+      if (currentList.length === 0) {
+        return res.status(400).json({ error: 'No current executives found in database to perform handover.' });
+      }
+
+      // Find president
+      const presidentObj = currentList.find(e => (e.office || '').toLowerCase().includes('president'));
+      const presidentName = presidentObj ? presidentObj.name : (currentList[0]?.name || 'Past President');
+
+      // Create comma-separated list of officers
+      const listStr = currentList.map(e => `${e.name} (${e.office})`).join(', ');
+
+      const achStr = Array.isArray(keyAchievements) ? JSON.stringify(keyAchievements) : (typeof keyAchievements === 'string' ? JSON.stringify([keyAchievements]) : '[]');
+
+      // Insert into historical_executives
+      const result = await db.insert(historicalExecutives).values({
+        tenure: tenure.trim(),
+        generationName: generationName.trim(),
+        generation: generation.trim(),
+        theme: theme || '',
+        president: presidentName,
+        executivesList: listStr,
+        mission: mission || '',
+        vision: vision || '',
+        keyAchievements: achStr,
+        photoUrl: photoUrl || '',
+      }).returning();
+
+      // Clear all current executives
+      await db.delete(executives);
+
+      res.status(200).json({ 
+        success: true, 
+        message: `Handover complete! ${currentList.length} current executives have been archived to the "${generationName}" (${generation}, ${tenure}).`, 
+        archivedRecord: result[0] 
+      });
+    } catch (error: any) {
+      console.error('Error during handover:', error);
+      res.status(500).json({ error: 'Handover processing failed: ' + (error.message || error) });
     }
   });
 
@@ -1727,6 +1783,59 @@ async function startServer() {
     } catch (error: any) {
       console.error('Error updating PINs:', error);
       res.status(500).json({ error: 'Failed to update PINs' });
+    }
+  });
+
+  app.post('/api/admin/change-password', requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { email, uid, password } = req.body;
+      const inputEmail = (email || '').toLowerCase().trim();
+      const inputUid = (uid || '').trim();
+      const newPassword = (password || '').trim();
+
+      if (!newPassword) {
+        return res.status(400).json({ error: 'Password is required' });
+      }
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
+      }
+
+      // Find the user to be updated
+      let targetUser = null;
+      if (inputUid) {
+        const uList = await db.select().from(users).where(eq(users.uid, inputUid));
+        if (uList.length > 0) targetUser = uList[0];
+      } else if (inputEmail) {
+        const uList = await db.select().from(users).where(eq(users.email, inputEmail));
+        if (uList.length > 0) targetUser = uList[0];
+      }
+
+      if (!targetUser) {
+        return res.status(404).json({ error: 'User not found in database. The user must sign in once first before their password can be set.' });
+      }
+
+      // Check authorization:
+      // A user can change their own password, OR a superadmin can change anyone's password.
+      const isSelf = req.user && (req.user.uid === targetUser.uid || req.user.email?.toLowerCase().trim() === targetUser.email.toLowerCase().trim());
+      const isSuper = req.userRole === 'superadmin';
+
+      if (!isSelf && !isSuper) {
+        return res.status(403).json({ error: 'Forbidden: Only the user themselves or a Superadmin can change this password.' });
+      }
+
+      // Hash password and update in DB
+      const hash = await bcrypt.hash(newPassword, 12);
+      await db.update(users)
+        .set({ 
+          passwordHash: hash,
+          securityPin: null // Deactivate the bootstrap PIN
+        })
+        .where(eq(users.id, targetUser.id));
+
+      res.json({ success: true, message: `Password successfully updated for ${targetUser.email}.` });
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      res.status(500).json({ error: 'Failed to change password' });
     }
   });
 
