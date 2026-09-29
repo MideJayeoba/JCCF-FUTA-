@@ -1,4 +1,5 @@
 import { db, createPool } from './index.ts';
+import bcrypt from 'bcryptjs';
 import { 
   users, 
   fellowships, 
@@ -431,24 +432,29 @@ export async function seedDatabaseIfEmpty() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT;
     `);
 
-    // 1. Seed / Upsert Superadmin into `users` table
+    // 1. Seed / Upsert Superadmin and PRO Admin into `users` table with hashed passwords
     const superEmail = (process.env.SUPERADMIN_EMAIL || 'jayeobapeace19459@gmail.com').toLowerCase().trim();
     const superPin = (process.env.SUPERADMIN_PIN || '1945').trim();
+    const superPasswordHash = await bcrypt.hash(superPin, 10);
+
+    const proEmail = (process.env.PRO_ADMIN_EMAIL || 'pro@jccf-futa.org').toLowerCase().trim();
+    const proPin = (process.env.PRO_ADMIN_PIN || '1945').trim();
+    const proPasswordHash = await bcrypt.hash(proPin, 10);
 
     await pool.query(`
-      INSERT INTO users (uid, email, display_name, photo_url, role, portfolio, security_pin, phone, last_login_at)
+      INSERT INTO users (uid, email, display_name, photo_url, role, portfolio, password_hash, security_pin, phone, last_login_at)
       VALUES 
-        ('superadmin-jayeoba-peace', $1, 'Jayeoba Peace Olamide', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80', 'superadmin', 'Central Executive Council / Superadmin', $2, '+234 813 987 6543', NOW())
+        ('superadmin-jayeoba-peace', $1, 'Jayeoba Peace Olamide', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80', 'superadmin', 'Central Executive Council / Superadmin', $2, NULL, '+234 813 987 6543', NOW()),
+        ('admin-futa-pro', $3, 'JCCF PRO Directorate', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80', 'admin', 'Public Relations Directorate', $4, NULL, '+234 814 567 8901', NOW())
       ON CONFLICT (uid) DO UPDATE SET
         email = EXCLUDED.email,
         display_name = EXCLUDED.display_name,
-        role = 'superadmin',
+        role = EXCLUDED.role,
         portfolio = EXCLUDED.portfolio,
-        -- Keep the bootstrap PIN only until a real password is set; then drop it so
-        -- the weak default can no longer be used to log in.
-        security_pin = CASE WHEN users.password_hash IS NOT NULL THEN NULL ELSE EXCLUDED.security_pin END,
+        password_hash = COALESCE(users.password_hash, EXCLUDED.password_hash),
+        security_pin = NULL,
         phone = EXCLUDED.phone;
-    `, [superEmail, superPin]);
+    `, [superEmail, superPasswordHash, proEmail, proPasswordHash]);
 
     // 2. Seed / Upsert System Settings
     const authListJson = JSON.stringify([
@@ -474,99 +480,9 @@ export async function seedDatabaseIfEmpty() {
         updated_at = NOW();
     `, [superEmail, superPin, authListJson]);
 
-    // 3. Seed / Ensure all 24 Member Fellowships in PostgreSQL
-    const existingFellowshipsRes = await pool.query('SELECT acronym, name FROM fellowships');
-    const existingAcronyms = new Set(existingFellowshipsRes.rows.map((r: any) => (r.acronym || '').toLowerCase().trim()));
-
-    for (const item of DEFAULT_FELLOWSHIPS) {
-      if (!existingAcronyms.has(item.acronym.toLowerCase().trim())) {
-        await pool.query(`
-          INSERT INTO fellowships (name, acronym, category, meeting_days, venue, president_name, president_phone, description, logo_url, map_url)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        `, [
-          item.name,
-          item.acronym,
-          item.category,
-          item.meetingDays,
-          item.venue,
-          item.presidentName,
-          item.presidentPhone,
-          item.description,
-          item.logoUrl,
-          item.mapUrl
-        ]);
-        existingAcronyms.add(item.acronym.toLowerCase().trim());
-      }
-    }
-    console.log(`✅ Synchronized ${DEFAULT_FELLOWSHIPS.length} member fellowships in PostgreSQL.`);
-
-    // 4. Seed Executives if table is empty
-    const execCheck = await pool.query('SELECT COUNT(*) FROM executives');
-    if (parseInt(execCheck.rows[0].count, 10) === 0) {
-      console.log('🌱 Seeding central executives into PostgreSQL...');
-      for (const item of DEFAULT_EXECUTIVES) {
-        await pool.query(`
-          INSERT INTO executives (name, office, department, level, phone, email, session, fellowship, photo_url, bio)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        `, [
-          item.name,
-          item.office,
-          item.department,
-          item.level,
-          item.phone,
-          item.email,
-          item.session,
-          item.fellowship,
-          item.photoUrl,
-          item.bio
-        ]);
-      }
-      console.log(`✅ Seeded ${DEFAULT_EXECUTIVES.length} central executives into database.`);
-    }
-
-    // 5. Seed Events if table is empty
-    const evCheck = await pool.query('SELECT COUNT(*) FROM events');
-    if (parseInt(evCheck.rows[0].count, 10) === 0) {
-      console.log('🌱 Seeding calendar events into PostgreSQL...');
-      for (const item of DEFAULT_EVENTS) {
-        await pool.query(`
-          INSERT INTO events (title, theme, date, time, venue, category, description, featured)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        `, [
-          item.title,
-          item.theme,
-          item.date,
-          item.time,
-          item.venue,
-          item.category,
-          item.description,
-          item.featured
-        ]);
-      }
-      console.log(`✅ Seeded ${DEFAULT_EVENTS.length} events into database.`);
-    }
-
-    // 6. Seed Announcements if table is empty
-    const annCheck = await pool.query('SELECT COUNT(*) FROM announcements');
-    if (parseInt(annCheck.rows[0].count, 10) === 0) {
-      console.log('🌱 Seeding announcements into PostgreSQL...');
-      for (const item of DEFAULT_ANNOUNCEMENTS) {
-        await pool.query(`
-          INSERT INTO announcements (title, content, category, date, author, pinned)
-          VALUES ($1, $2, $3, $4, $5, $6)
-        `, [
-          item.title,
-          item.content,
-          item.category,
-          item.date,
-          item.author,
-          item.pinned
-        ]);
-      }
-      console.log(`✅ Seeded ${DEFAULT_ANNOUNCEMENTS.length} announcements into database.`);
-    }
-
-    console.log('✅ PostgreSQL database records and administrative entities successfully synchronized.');
+    // Note: No dummy content is seeded into fellowships, executives, events, announcements, media, or resources.
+    // The database starts clean and empty. If there is no data in the database, the UI indicates that clearly.
+    console.log('✅ PostgreSQL database administrative entities successfully synchronized (pure data mode, no dummy records).');
   } catch (err: any) {
     console.error('Database seeding error notice:', err.message || err);
   }

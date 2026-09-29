@@ -1,0 +1,57 @@
+{
+  "announcements": [],
+  "events": [],
+  "fellowships": [],
+  "executives": [],
+  "historicalExecutives": [],
+  "media": [],
+  "resources": [],
+  "donations": [],
+  "users": [
+    {
+      "id": 1,
+      "uid": "superadmin-jayeoba-peace",
+      "email": "jayeobapeace19459@gmail.com",
+      "display_name": "Jayeoba Peace Olamide",
+      "displayName": "Jayeoba Peace Olamide",
+      "role": "superadmin",
+      "portfolio": "Central Executive Council / Superadmin",
+      "photo_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      "photoUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      "password_hash": "$2b$10$wKYf4a2VDvHCg8prYTi9qeWbjiVOaa8h0PFdflAMj.vCJWt1HdxBK",
+      "passwordHash": "$2b$10$wKYf4a2VDvHCg8prYTi9qeWbjiVOaa8h0PFdflAMj.vCJWt1HdxBK",
+      "phone": "+234 813 987 6543",
+      "created_at": "2026-09-29T18:05:16.836Z",
+      "last_login_at": "2026-09-29T18:05:16.836Z"
+    },
+    {
+      "id": 2,
+      "uid": "admin-futa-pro",
+      "email": "jccffuta21@gmail.com",
+      "display_name": "JCCF PRO Directorate",
+      "displayName": "JCCF PRO Directorate",
+      "role": "admin",
+      "portfolio": "Public Relations Directorate",
+      "photo_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+      "photoUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+      "password_hash": "$2b$10$hHbdzmBJ9Q58c8UFMuqjFOjfoiuB4NX5zIQSIHJb/dSpIPV1ac2ge",
+      "passwordHash": "$2b$10$hHbdzmBJ9Q58c8UFMuqjFOjfoiuB4NX5zIQSIHJb/dSpIPV1ac2ge",
+      "phone": "+234 814 567 8901",
+      "created_at": "2026-09-29T18:05:16.836Z",
+      "last_login_at": "2026-09-29T18:05:16.836Z"
+    }
+  ],
+  "systemSettings": {
+    "superadmin_email": "jayeobapeace19459@gmail.com",
+    "superadmin_pin": "3002",
+    "pro_admin_email": "jccffuta21@gmail.com",
+    "pro_admin_pin": "6202",
+    "academicSession": "2025/2026 Academic Session",
+    "annualTheme": "Reigning by Grace & Wisdom",
+    "themeScripture": "Romans 5:17 • Daniel 1:17",
+    "officeEmail": "futajccf@gmail.com",
+    "officePhone": "+234 813 456 7890",
+    "chapelAddress": "JCCF Secretariat, Near ETF Lecture Theatre, FUTA South Gate",
+    "youtubeChannel": "@jccf_futa"
+  }
+}

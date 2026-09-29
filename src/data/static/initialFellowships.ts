@@ -1,4 +1,4 @@
-import { Fellowship } from '../types';
+import { Fellowship } from '../../types';
 
 export const MEMBER_FELLOWSHIPS: Fellowship[] = [
   {

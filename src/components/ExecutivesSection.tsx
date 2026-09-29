@@ -115,8 +115,8 @@ export const ExecutivesSection: React.FC<ExecutivesSectionProps> = ({
             {sortedFiltered.length === 0 ? (
               <div className="bg-white rounded-3xl border border-[#E5E5E5] p-12 text-center max-w-xl mx-auto shadow-xs">
                 <ShieldCheck className="w-12 h-12 text-[#B5121B] mx-auto mb-3" />
-                <h3 className="text-base font-bold text-[#171717]">No Household Profiles Listed</h3>
-                <p className="text-xs text-[#666666] mt-1">Household leadership for this session is being confirmed by the election and central committee.</p>
+                <h3 className="text-base font-bold text-[#171717]">No Executive Profiles in Database Yet</h3>
+                <p className="text-xs text-[#666666] mt-1">There are currently no central executive council profiles in the database. Council leadership details will appear here once added by the Secretariat.</p>
               </div>
             ) : (
               <div className="space-y-10">
@@ -256,76 +256,86 @@ export const ExecutivesSection: React.FC<ExecutivesSectionProps> = ({
 
         {/* Historical Archives Tab */}
         {showAll && activeTab === 'historical' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-            {historicalExecutives.map((item, idx) => (
-              <div
-                key={item.id || idx}
-                className="bg-white p-6 rounded-2xl border border-[#E5E5E5] hover:border-[#B5121B] shadow-xs space-y-3 transition-all"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black uppercase tracking-wider bg-[#B5121B] text-white px-2.5 py-0.5 rounded">
-                    {item.tenure}
-                  </span>
-                  <span className="text-xs font-bold text-[#8B0000] italic">
-                    Theme: “{item.theme}”
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3 pt-1">
-                  {item.photoUrl ? (
-                    <img
-                      src={item.photoUrl}
-                      alt={item.president}
-                      className="w-12 h-12 rounded-full object-cover border border-[#E5E5E5]"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-[#FDECEC] text-[#B5121B] flex items-center justify-center font-bold text-sm">
-                      {item.president.charAt(0)}
+          <div>
+            {historicalExecutives.length === 0 ? (
+              <div className="bg-white rounded-3xl border border-[#E5E5E5] p-12 text-center max-w-xl mx-auto shadow-xs">
+                <History className="w-12 h-12 text-[#B5121B] mx-auto mb-3" />
+                <h3 className="text-base font-bold text-[#171717]">No Historical Administrations in Database Yet</h3>
+                <p className="text-xs text-[#666666] mt-1">There are currently no past administrations or historical records saved in the database.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+                {historicalExecutives.map((item, idx) => (
+                  <div
+                    key={item.id || idx}
+                    className="bg-white p-6 rounded-2xl border border-[#E5E5E5] hover:border-[#B5121B] shadow-xs space-y-3 transition-all"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black uppercase tracking-wider bg-[#B5121B] text-white px-2.5 py-0.5 rounded">
+                        {item.tenure}
+                      </span>
+                      <span className="text-xs font-bold text-[#8B0000] italic">
+                        Theme: “{item.theme}”
+                      </span>
                     </div>
-                  )}
-                  <div>
-                    <h4 className="text-base font-bold text-[#171717] font-heading">
-                      {item.president}
-                    </h4>
-                    <p className="text-xs text-[#666666]">President • {item.tenure} Administration</p>
-                    {item.generationName && (
-                      <p className="text-[11px] font-bold text-[#B5121B] mt-0.5">
-                        {item.generation ? `${item.generation}: ` : ''}{item.generationName}
-                      </p>
+
+                    <div className="flex items-center gap-3 pt-1">
+                      {item.photoUrl ? (
+                        <img
+                          src={item.photoUrl}
+                          alt={item.president}
+                          className="w-12 h-12 rounded-full object-cover border border-[#E5E5E5]"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-[#FDECEC] text-[#B5121B] flex items-center justify-center font-bold text-sm">
+                          {item.president.charAt(0)}
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="text-base font-bold text-[#171717] font-heading">
+                          {item.president}
+                        </h4>
+                        <p className="text-xs text-[#666666]">President • {item.tenure} Administration</p>
+                        {item.generationName && (
+                          <p className="text-[11px] font-bold text-[#B5121B] mt-0.5">
+                            {item.generation ? `${item.generation}: ` : ''}{item.generationName}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {item.executivesList && (
+                      <div className="text-[11px] text-[#666666] pt-1 leading-relaxed">
+                        <strong>Executive Officers:</strong> {item.executivesList}
+                      </div>
+                    )}
+
+                    {item.keyAchievements && item.keyAchievements.length > 0 && (
+                      <div className="space-y-1.5 pt-2 border-t border-[#E5E5E5]">
+                        <span className="text-xs font-bold text-[#666666] block">Key Milestones & Legacy:</span>
+                        <ul className="space-y-1 text-xs text-[#171717] list-disc list-inside">
+                          {item.keyAchievements.map((ach, aIdx) => (
+                            <li key={aIdx} className="leading-relaxed">{ach}</li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
                   </div>
-                </div>
-
-                {item.executivesList && (
-                  <div className="text-[11px] text-[#666666] pt-1 leading-relaxed">
-                    <strong>Executive Officers:</strong> {item.executivesList}
-                  </div>
-                )}
-
-                {item.keyAchievements && item.keyAchievements.length > 0 && (
-                  <div className="space-y-1.5 pt-2 border-t border-[#E5E5E5]">
-                    <span className="text-xs font-bold text-[#666666] block">Key Milestones & Legacy:</span>
-                    <ul className="space-y-1 text-xs text-[#171717] list-disc list-inside">
-                      {item.keyAchievements.map((ach, aIdx) => (
-                        <li key={aIdx} className="leading-relaxed">{ach}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
 
         {/* View All CTA on Homepage */}
-        {!showAll && onViewAllExecutives && (
+        {!showAll && onViewAllExecutives && executives.length > 0 && (
           <div className="text-center mt-12">
             <button
               onClick={onViewAllExecutives}
               className="px-8 py-3.5 bg-[#B5121B] hover:bg-[#8B0000] text-white font-bold text-sm rounded-xl shadow-xs hover:shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
             >
-              <span>View Full Council & Past Executives</span>
+              <span>View Full Council ({executives.length})</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

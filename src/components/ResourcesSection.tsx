@@ -114,60 +114,78 @@ export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
           </div>
         )}
 
-        {/* Resource Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {displayedResources.map((item) => (
-            <div
-              key={item.id}
-              className="bg-[#FAFAFA] hover:bg-white p-6 rounded-2xl border border-[#E5E5E5] hover:border-[#B5121B] transition-all shadow-xs hover:shadow-md flex flex-col justify-between group text-left"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-[#FDECEC] text-[#B5121B] flex items-center justify-center border border-[#F8D0D0]">
-                    {getCategoryIcon(item.category)}
+        {/* Resource Cards Grid or Empty State Indicator */}
+        {resources.length === 0 ? (
+          <div className="bg-[#FAFAFA] rounded-3xl border border-[#E5E5E5] p-12 text-center max-w-2xl mx-auto shadow-xs">
+            <div className="w-16 h-16 rounded-full bg-[#FDECEC] text-[#8B0000] flex items-center justify-center mx-auto mb-4 border border-[#F8D0D0]">
+              <BookOpen className="w-8 h-8 text-[#B5121B]" />
+            </div>
+            <h3 className="text-lg font-bold text-[#171717] font-heading">No Resources or Documents in Database Yet</h3>
+            <p className="text-xs sm:text-sm text-[#666666] mt-2 leading-relaxed max-w-md mx-auto">
+              There are currently no constitutional guidelines, study manuals, or publications uploaded in the database. When uploaded by the Secretariat, they will appear here.
+            </p>
+          </div>
+        ) : filteredResources.length === 0 ? (
+          <div className="bg-[#FAFAFA] rounded-3xl border border-[#E5E5E5] p-10 text-center max-w-xl mx-auto shadow-xs">
+            <FolderArchive className="w-10 h-10 text-[#666666] mx-auto mb-3 opacity-60" />
+            <h3 className="text-base font-bold text-[#171717]">No Matching Resources Found</h3>
+            <p className="text-xs text-[#666666] mt-1">Try searching with other terms or clearing category filters.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {displayedResources.map((item) => (
+              <div
+                key={item.id}
+                className="bg-[#FAFAFA] hover:bg-white p-6 rounded-2xl border border-[#E5E5E5] hover:border-[#B5121B] transition-all shadow-xs hover:shadow-md flex flex-col justify-between group text-left"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-[#FDECEC] text-[#B5121B] flex items-center justify-center border border-[#F8D0D0]">
+                      {getCategoryIcon(item.category)}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider bg-[#FDECEC] text-[#8B0000] px-2 py-0.5 rounded border border-[#F8D0D0]">
+                        {item.fileType} • {item.fileSize}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider bg-[#FDECEC] text-[#8B0000] px-2 py-0.5 rounded border border-[#F8D0D0]">
-                      {item.fileType} • {item.fileSize}
-                    </span>
-                  </div>
+
+                  <h3 className="text-base font-bold font-heading text-[#171717] group-hover:text-[#B5121B] transition-colors leading-snug">
+                    {item.title}
+                  </h3>
+
+                  <p className="text-xs text-[#666666] leading-relaxed line-clamp-2">
+                    {item.description}
+                  </p>
                 </div>
 
-                <h3 className="text-base font-bold font-heading text-[#171717] group-hover:text-[#B5121B] transition-colors leading-snug">
-                  {item.title}
-                </h3>
+                <div className="pt-4 mt-3 border-t border-[#E5E5E5] flex items-center justify-between">
+                  <span className="text-[11px] text-[#666666]">
+                    <strong>{(Number(item.downloadCount) || 0).toLocaleString()}</strong> downloads
+                  </span>
 
-                <p className="text-xs text-[#666666] leading-relaxed line-clamp-2">
-                  {item.description}
-                </p>
+                  <button
+                    onClick={() => handleDownload(item.id, item.title)}
+                    disabled={downloadingId === item.id}
+                    className="px-4 py-2 bg-[#B5121B] hover:bg-[#8B0000] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>{downloadingId === item.id ? 'Downloading...' : 'Download File'}</span>
+                  </button>
+                </div>
               </div>
-
-              <div className="pt-4 mt-3 border-t border-[#E5E5E5] flex items-center justify-between">
-                <span className="text-[11px] text-[#666666]">
-                  <strong>{(Number(item.downloadCount) || 0).toLocaleString()}</strong> downloads
-                </span>
-
-                <button
-                  onClick={() => handleDownload(item.id, item.title)}
-                  disabled={downloadingId === item.id}
-                  className="px-4 py-2 bg-[#B5121B] hover:bg-[#8B0000] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>{downloadingId === item.id ? 'Downloading...' : 'Download File'}</span>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* View All CTA on Homepage */}
-        {!showAll && onViewAllResources && (
+        {!showAll && onViewAllResources && resources.length > 4 && (
           <div className="text-center mt-12">
             <button
               onClick={onViewAllResources}
               className="px-8 py-3.5 bg-[#B5121B] hover:bg-[#8B0000] text-white font-bold text-sm rounded-xl shadow-xs hover:shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
             >
-              <span>Explore All Documents & Manuals</span>
+              <span>Explore All Documents & Manuals ({resources.length})</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

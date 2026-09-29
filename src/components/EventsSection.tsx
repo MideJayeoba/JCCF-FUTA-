@@ -108,105 +108,123 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
           </div>
         )}
 
-        {/* 3 Event Cards Grid (or all) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayedEvents.map((event) => {
-            const isRsvped = rsvpedEvents[event.id];
-            return (
-              <div
-                key={event.id}
-                className="bg-white rounded-2xl border border-[#E5E5E5] hover:border-[#B5121B] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
-              >
-                <div>
-                  {/* Event Thumbnail */}
-                  <div className="h-48 relative overflow-hidden bg-[#171717]">
-                    <img
-                      src={event.image}
-                      alt={event.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#171717]/85 via-transparent to-transparent" />
+        {/* Events Cards Grid or Empty State Indicator */}
+        {events.length === 0 ? (
+          <div className="bg-white rounded-3xl border border-[#E5E5E5] p-12 text-center max-w-2xl mx-auto shadow-xs">
+            <div className="w-16 h-16 rounded-full bg-[#FDECEC] text-[#8B0000] flex items-center justify-center mx-auto mb-4 border border-[#F8D0D0]">
+              <Calendar className="w-8 h-8 text-[#B5121B]" />
+            </div>
+            <h3 className="text-lg font-bold text-[#171717] font-heading">No Upcoming Events Scheduled in Database Yet</h3>
+            <p className="text-xs sm:text-sm text-[#666666] mt-2 leading-relaxed max-w-md mx-auto">
+              There are currently no events, prayer assemblies, or conferences recorded in the database. New calendar dates will appear here once scheduled by the Central Executive Council.
+            </p>
+          </div>
+        ) : filteredEvents.length === 0 ? (
+          <div className="bg-white rounded-3xl border border-[#E5E5E5] p-10 text-center max-w-xl mx-auto shadow-xs">
+            <Calendar className="w-10 h-10 text-[#666666] mx-auto mb-3 opacity-60" />
+            <h3 className="text-base font-bold text-[#171717]">No Matching Events Found</h3>
+            <p className="text-xs text-[#666666] mt-1">Try searching with different keywords or choosing another category.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {displayedEvents.map((event) => {
+              const isRsvped = rsvpedEvents[event.id];
+              return (
+                <div
+                  key={event.id}
+                  className="bg-white rounded-2xl border border-[#E5E5E5] hover:border-[#B5121B] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+                >
+                  <div>
+                    {/* Event Thumbnail */}
+                    <div className="h-48 relative overflow-hidden bg-[#171717]">
+                      <img
+                        src={event.image}
+                        alt={event.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#171717]/85 via-transparent to-transparent" />
 
-                    {/* Category Label */}
-                    <div className="absolute top-3 left-3">
-                      <span className="text-[10px] font-black uppercase tracking-wider bg-[#B5121B] text-white px-2.5 py-0.5 rounded shadow-xs">
-                        {event.category}
-                      </span>
+                      {/* Category Label */}
+                      <div className="absolute top-3 left-3">
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-[#B5121B] text-white px-2.5 py-0.5 rounded shadow-xs">
+                          {event.category}
+                        </span>
+                      </div>
+
+                      {/* Red Date Accent Pill */}
+                      <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-[#E5E5E5] text-xs font-bold text-[#8B0000] flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-[#B5121B]" />
+                        <span>{event.date}</span>
+                      </div>
                     </div>
 
-                    {/* Red Date Accent Pill */}
-                    <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-[#E5E5E5] text-xs font-bold text-[#8B0000] flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-[#B5121B]" />
-                      <span>{event.date}</span>
-                    </div>
-                  </div>
+                    {/* Card Content */}
+                    <div className="p-5 space-y-3">
+                      <h3 className="text-base font-bold font-heading text-[#171717] group-hover:text-[#B5121B] transition-colors leading-snug">
+                        {event.title}
+                      </h3>
 
-                  {/* Card Content */}
-                  <div className="p-5 space-y-3">
-                    <h3 className="text-base font-bold font-heading text-[#171717] group-hover:text-[#B5121B] transition-colors leading-snug">
-                      {event.title}
-                    </h3>
+                      {event.theme && (
+                        <p className="text-xs font-semibold text-[#8B0000] bg-[#FDECEC] px-2.5 py-1 rounded-lg border border-[#F8D0D0] inline-block">
+                          Theme: {event.theme}
+                        </p>
+                      )}
 
-                    {event.theme && (
-                      <p className="text-xs font-semibold text-[#8B0000] bg-[#FDECEC] px-2.5 py-1 rounded-lg border border-[#F8D0D0] inline-block">
-                        Theme: {event.theme}
+                      <p className="text-xs text-[#666666] line-clamp-2 leading-relaxed">
+                        {event.description}
                       </p>
-                    )}
 
-                    <p className="text-xs text-[#666666] line-clamp-2 leading-relaxed">
-                      {event.description}
-                    </p>
-
-                    <div className="space-y-1.5 pt-2 border-t border-[#E5E5E5] text-xs text-[#171717]">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-3.5 h-3.5 text-[#B5121B] shrink-0" />
-                        <span className="text-[#666666]">{event.time}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-3.5 h-3.5 text-[#B5121B] shrink-0" />
-                        <span className="text-[#666666] line-clamp-1">{event.venue}</span>
+                      <div className="space-y-1.5 pt-2 border-t border-[#E5E5E5] text-xs text-[#171717]">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-3.5 h-3.5 text-[#B5121B] shrink-0" />
+                          <span className="text-[#666666]">{event.time}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-3.5 h-3.5 text-[#B5121B] shrink-0" />
+                          <span className="text-[#666666] line-clamp-1">{event.venue}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
+
+                  {/* Card Actions */}
+                  <div className="p-5 pt-0 flex items-center gap-2">
+                    <button
+                      onClick={() => setSelectedEventModal(event)}
+                      className="flex-1 py-2.5 px-3 bg-[#FAFAFA] hover:bg-[#FDECEC] text-[#171717] hover:text-[#B5121B] border border-[#E5E5E5] font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <span>View Details</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      onClick={(e) => handleRsvp(event.id, e)}
+                      className={`py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center gap-1 cursor-pointer ${
+                        isRsvped
+                          ? 'bg-[#FDECEC] text-[#8B0000] border border-[#F8D0D0]'
+                          : 'bg-[#B5121B] hover:bg-[#8B0000] text-white shadow-xs'
+                      }`}
+                    >
+                      <Bell className="w-3.5 h-3.5" />
+                      <span>{isRsvped ? 'Saved' : 'Remind'}</span>
+                    </button>
+                  </div>
+
                 </div>
-
-                {/* Card Actions */}
-                <div className="p-5 pt-0 flex items-center gap-2">
-                  <button
-                    onClick={() => setSelectedEventModal(event)}
-                    className="flex-1 py-2.5 px-3 bg-[#FAFAFA] hover:bg-[#FDECEC] text-[#171717] hover:text-[#B5121B] border border-[#E5E5E5] font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <span>View Details</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-
-                  <button
-                    onClick={(e) => handleRsvp(event.id, e)}
-                    className={`py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center gap-1 cursor-pointer ${
-                      isRsvped
-                        ? 'bg-[#FDECEC] text-[#8B0000] border border-[#F8D0D0]'
-                        : 'bg-[#B5121B] hover:bg-[#8B0000] text-white shadow-xs'
-                    }`}
-                  >
-                    <Bell className="w-3.5 h-3.5" />
-                    <span>{isRsvped ? 'Saved' : 'Remind'}</span>
-                  </button>
-                </div>
-
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* View All Events CTA on Homepage */}
-        {!showAll && onViewAllEvents && (
+        {!showAll && onViewAllEvents && events.length > 3 && (
           <div className="text-center mt-12">
             <button
               onClick={onViewAllEvents}
               className="px-8 py-3.5 bg-[#B5121B] hover:bg-[#8B0000] text-white font-bold text-sm rounded-xl shadow-xs hover:shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
             >
-              <span>View All Events & Weekly Timetable</span>
+              <span>View All Events ({events.length})</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

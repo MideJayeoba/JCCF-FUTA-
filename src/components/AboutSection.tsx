@@ -1,4 +1,5 @@
 import React from 'react';
+import { useApp } from '../context/AppContext';
 import { ArrowRight, CheckCircle2, ShieldCheck, BookOpen, Flame, Heart } from 'lucide-react';
 
 interface AboutSectionProps {
@@ -6,6 +7,7 @@ interface AboutSectionProps {
 }
 
 export const AboutSection: React.FC<AboutSectionProps> = ({ onLearnMore }) => {
+  const { fellowships } = useApp();
   return (
     <section className="py-16 sm:py-24 bg-[#FAFAFA] border-b border-[#E5E5E5]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -38,8 +40,12 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ onLearnMore }) => {
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div className="text-left">
-                <span className="text-xs font-bold text-[#171717] block">24+ Member Fellowships</span>
-                <span className="text-[11px] text-[#666666]">Formally Registered Under FUTA Management</span>
+                <span className="text-xs font-bold text-[#171717] block">
+                  {fellowships.length > 0 ? `${fellowships.length} Registered Fellowships` : 'Campus Fellowship Directory'}
+                </span>
+                <span className="text-[11px] text-[#666666]">
+                  {fellowships.length > 0 ? 'Operating on FUTA Campus' : 'Apex Body for Christian Fellowships in FUTA'}
+                </span>
               </div>
             </div>
           </div>
@@ -80,7 +86,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ onLearnMore }) => {
               </div>
               <div className="flex items-center gap-2 text-xs font-semibold text-[#171717]">
                 <CheckCircle2 className="w-4 h-4 text-[#B5121B] shrink-0" />
-                <span>25+ Registered Constituent Fellowships</span>
+                <span>{fellowships.length > 0 ? `${fellowships.length} Registered Constituent Fellowships` : 'Constituent Member Fellowships'}</span>
               </div>
             </div>
 

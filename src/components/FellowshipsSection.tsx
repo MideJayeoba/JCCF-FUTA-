@@ -119,101 +119,119 @@ export const FellowshipsSection: React.FC<FellowshipsSectionProps> = ({
           </div>
         )}
 
-        {/* Fellowships Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayedFellowships.map((fellowship) => (
-            <div
-              key={fellowship.id}
-              className="bg-[#FAFAFA] hover:bg-white rounded-2xl border border-[#E5E5E5] hover:border-[#B5121B] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
-            >
-              <div>
-                {/* Top Image Banner */}
-                <div className="h-44 relative overflow-hidden bg-[#171717]">
-                  <img
-                    src={fellowship.bannerImage}
-                    alt={fellowship.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#171717]/90 via-[#171717]/30 to-transparent" />
-                  
-                  {/* Category & Tag */}
-                  <div className="absolute top-3 left-3 flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider bg-[#B5121B] text-white px-2 py-0.5 rounded shadow-xs">
-                      {fellowship.category}
-                    </span>
-                  </div>
-
-                  <div className="absolute bottom-3 left-4 right-4 text-white">
-                    <span className="text-[11px] font-bold text-[#FDECEC] block">
-                      {fellowship.acronym}
-                    </span>
-                    <h3 className="text-base font-bold font-heading text-white line-clamp-1">
-                      {fellowship.name}
-                    </h3>
-                  </div>
-                </div>
-
-                {/* Card Body */}
-                <div className="p-5 space-y-3">
-                  <p className="text-xs text-[#666666] line-clamp-2 leading-relaxed italic">
-                    “{fellowship.motto}”
-                  </p>
-
-                  <div className="space-y-2 pt-2 border-t border-[#E5E5E5] text-xs text-[#171717]">
-                    <div className="flex items-start gap-2">
-                      <Calendar className="w-3.5 h-3.5 text-[#B5121B] shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-semibold text-[#171717]">{fellowship.meetingDays}</span>
-                        <span className="block text-[11px] text-[#666666]">{fellowship.meetingTime}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-1">
-                      <div className="flex items-start gap-2">
-                        <MapPin className="w-3.5 h-3.5 text-[#B5121B] shrink-0 mt-0.5" />
-                        <span className="text-[#666666] line-clamp-1">{fellowship.meetingVenue}</span>
-                      </div>
-                      {fellowship.mapUrl && (
-                        <a
-                          href={fellowship.mapUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-[11px] font-bold text-[#B5121B] hover:underline flex items-center gap-1 shrink-0 ml-2"
-                          title="Open in Google Maps"
-                        >
-                          <span>Map</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action */}
-              <div className="p-5 pt-0">
-                <button
-                  onClick={() => handleOpenDetail(fellowship)}
-                  className="w-full py-2.5 px-4 bg-white group-hover:bg-[#B5121B] text-[#B5121B] group-hover:text-white border border-[#B5121B] font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
-                >
-                  <span>View Fellowship</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
+        {/* Fellowships Grid or Empty State Indicator */}
+        {fellowships.length === 0 ? (
+          <div className="bg-[#FAFAFA] rounded-3xl border border-[#E5E5E5] p-12 text-center max-w-2xl mx-auto shadow-xs">
+            <div className="w-16 h-16 rounded-full bg-[#FDECEC] text-[#8B0000] flex items-center justify-center mx-auto mb-4 border border-[#F8D0D0]">
+              <Users className="w-8 h-8 text-[#B5121B]" />
             </div>
-          ))}
-        </div>
+            <h3 className="text-lg font-bold text-[#171717] font-heading">No Fellowships Registered in Database Yet</h3>
+            <p className="text-xs sm:text-sm text-[#666666] mt-2 leading-relaxed max-w-md mx-auto">
+              There are currently no campus Christian fellowships registered in the database. Member fellowships operating on campus can be registered by administrators or fellowship executives.
+            </p>
+          </div>
+        ) : filteredFellowships.length === 0 ? (
+          <div className="bg-[#FAFAFA] rounded-3xl border border-[#E5E5E5] p-10 text-center max-w-xl mx-auto shadow-xs">
+            <Users className="w-10 h-10 text-[#666666] mx-auto mb-3 opacity-60" />
+            <h3 className="text-base font-bold text-[#171717]">No Matching Fellowships Found</h3>
+            <p className="text-xs text-[#666666] mt-1">Try adjusting your search query or category filter.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {displayedFellowships.map((fellowship) => (
+              <div
+                key={fellowship.id}
+                className="bg-[#FAFAFA] hover:bg-white rounded-2xl border border-[#E5E5E5] hover:border-[#B5121B] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+              >
+                <div>
+                  {/* Top Image Banner */}
+                  <div className="h-44 relative overflow-hidden bg-[#171717]">
+                    <img
+                      src={fellowship.bannerImage}
+                      alt={fellowship.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#171717]/90 via-[#171717]/30 to-transparent" />
+                    
+                    {/* Category & Tag */}
+                    <div className="absolute top-3 left-3 flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider bg-[#B5121B] text-white px-2 py-0.5 rounded shadow-xs">
+                        {fellowship.category}
+                      </span>
+                    </div>
+
+                    <div className="absolute bottom-3 left-4 right-4 text-white">
+                      <span className="text-[11px] font-bold text-[#FDECEC] block">
+                        {fellowship.acronym}
+                      </span>
+                      <h3 className="text-base font-bold font-heading text-white line-clamp-1">
+                        {fellowship.name}
+                      </h3>
+                    </div>
+                  </div>
+
+                  {/* Card Body */}
+                  <div className="p-5 space-y-3">
+                    <p className="text-xs text-[#666666] line-clamp-2 leading-relaxed italic">
+                      “{fellowship.motto}”
+                    </p>
+
+                    <div className="space-y-2 pt-2 border-t border-[#E5E5E5] text-xs text-[#171717]">
+                      <div className="flex items-start gap-2">
+                        <Calendar className="w-3.5 h-3.5 text-[#B5121B] shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold text-[#171717]">{fellowship.meetingDays}</span>
+                          <span className="block text-[11px] text-[#666666]">{fellowship.meetingTime}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-start gap-2">
+                          <MapPin className="w-3.5 h-3.5 text-[#B5121B] shrink-0 mt-0.5" />
+                          <span className="text-[#666666] line-clamp-1">{fellowship.meetingVenue}</span>
+                        </div>
+                        {fellowship.mapUrl && (
+                          <a
+                            href={fellowship.mapUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[11px] font-bold text-[#B5121B] hover:underline flex items-center gap-1 shrink-0 ml-2"
+                            title="Open in Google Maps"
+                          >
+                            <span>Map</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action */}
+                <div className="p-5 pt-0">
+                  <button
+                    onClick={() => handleOpenDetail(fellowship)}
+                    className="w-full py-2.5 px-4 bg-white group-hover:bg-[#B5121B] text-[#B5121B] group-hover:text-white border border-[#B5121B] font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                  >
+                    <span>View Fellowship</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* View All Button on Homepage */}
-        {!showAll && onViewAllFellowships && (
+        {!showAll && onViewAllFellowships && fellowships.length > 6 && (
           <div className="text-center mt-12">
             <button
               onClick={onViewAllFellowships}
               className="px-8 py-3.5 bg-[#B5121B] hover:bg-[#8B0000] text-white font-bold text-sm rounded-xl shadow-xs hover:shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
             >
-              <span>View All 15+ Fellowships</span>
+              <span>View All {fellowships.length} Fellowships</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

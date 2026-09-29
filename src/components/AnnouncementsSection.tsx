@@ -109,86 +109,99 @@ export const AnnouncementsSection: React.FC<AnnouncementsSectionProps> = ({
           </div>
         )}
 
-        {/* Grid Layout: Featured Left, Smaller Right */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Featured Announcement Card */}
-          {featured && (
-            <div className="lg:col-span-7 bg-[#FAFAFA] rounded-3xl p-6 sm:p-8 border border-[#E5E5E5] hover:border-[#B5121B] transition-all shadow-xs flex flex-col justify-between group">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <span className="text-[10px] font-black uppercase tracking-wider bg-[#B5121B] text-white px-2.5 py-1 rounded">
-                    Featured Bulletin • {featured.category}
-                  </span>
-                  <span className="text-xs text-[#666666] font-medium flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-[#B5121B]" />
-                    {featured.date}
-                  </span>
-                </div>
-
-                <h3 className="text-xl sm:text-2xl font-bold font-heading text-[#171717] group-hover:text-[#B5121B] transition-colors leading-tight">
-                  {featured.title}
-                </h3>
-
-                <p className="text-sm text-[#666666] leading-relaxed">
-                  {featured.summary}
-                </p>
-
-                <div className="pt-2 text-xs text-[#666666] flex items-center gap-2">
-                  <User className="w-3.5 h-3.5 text-[#B5121B]" />
-                  <span>Author: <strong>{featured.author}</strong></span>
-                </div>
-              </div>
-
-              <div className="pt-6 mt-4 border-t border-[#E5E5E5] flex items-center justify-between">
-                <button
-                  onClick={() => setSelectedAnnouncement(featured)}
-                  className="px-6 py-2.5 bg-[#B5121B] hover:bg-[#8B0000] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer"
-                >
-                  <span>Read Full Notice</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-                <span className="text-xs font-semibold text-[#8B0000] bg-[#FDECEC] px-2.5 py-1 rounded-lg border border-[#F8D0D0]">
-                  Verified Circular
-                </span>
-              </div>
+        {/* Empty State Banner when no announcements */}
+        {filteredAnnouncements.length === 0 ? (
+          <div className="bg-[#FAFAFA] rounded-3xl border border-[#E5E5E5] p-12 text-center max-w-2xl mx-auto shadow-xs">
+            <div className="w-16 h-16 rounded-full bg-[#FDECEC] text-[#8B0000] flex items-center justify-center mx-auto mb-4 border border-[#F8D0D0]">
+              <Bell className="w-8 h-8" />
             </div>
-          )}
-
-          {/* Smaller Announcement List Cards */}
-          <div className="lg:col-span-5 space-y-4">
-            {remaining.slice(0, 3).map((item) => (
-              <div
-                key={item.id}
-                onClick={() => setSelectedAnnouncement(item)}
-                className="bg-[#FAFAFA] hover:bg-white p-5 rounded-2xl border border-[#E5E5E5] hover:border-[#B5121B] transition-all shadow-xs hover:shadow-md cursor-pointer group flex flex-col justify-between"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#8B0000] bg-[#FDECEC] px-2 py-0.5 rounded border border-[#F8D0D0]">
-                      {item.category}
+            <h3 className="text-lg font-bold text-[#171717] font-heading">No Announcements Published Yet</h3>
+            <p className="text-xs sm:text-sm text-[#666666] mt-2 leading-relaxed max-w-md mx-auto">
+              There are currently no announcements or official circulars in the database. When published by the Central Executive Council, they will appear here.
+            </p>
+          </div>
+        ) : (
+          /* Grid Layout: Featured Left, Smaller Right */
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            {/* Featured Announcement Card */}
+            {featured && (
+              <div className="lg:col-span-7 bg-[#FAFAFA] rounded-3xl p-6 sm:p-8 border border-[#E5E5E5] hover:border-[#B5121B] transition-all shadow-xs flex flex-col justify-between group">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-[#B5121B] text-white px-2.5 py-1 rounded">
+                      Featured Bulletin • {featured.category}
                     </span>
-                    <span className="text-[11px] text-[#666666]">{item.date}</span>
+                    <span className="text-xs text-[#666666] font-medium flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 text-[#B5121B]" />
+                      {featured.date}
+                    </span>
                   </div>
 
-                  <h4 className="text-sm font-bold text-[#171717] group-hover:text-[#B5121B] transition-colors leading-snug line-clamp-2">
-                    {item.title}
-                  </h4>
+                  <h3 className="text-xl sm:text-2xl font-bold font-heading text-[#171717] group-hover:text-[#B5121B] transition-colors leading-tight">
+                    {featured.title}
+                  </h3>
 
-                  <p className="text-xs text-[#666666] line-clamp-2">
-                    {item.summary}
+                  <p className="text-sm text-[#666666] leading-relaxed">
+                    {featured.summary}
                   </p>
+
+                  <div className="pt-2 text-xs text-[#666666] flex items-center gap-2">
+                    <User className="w-3.5 h-3.5 text-[#B5121B]" />
+                    <span>Author: <strong>{featured.author}</strong></span>
+                  </div>
                 </div>
 
-                <div className="pt-3 mt-1 flex items-center justify-between text-xs font-bold text-[#B5121B]">
-                  <span>View announcement</span>
-                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <div className="pt-6 mt-4 border-t border-[#E5E5E5] flex items-center justify-between">
+                  <button
+                    onClick={() => setSelectedAnnouncement(featured)}
+                    className="px-6 py-2.5 bg-[#B5121B] hover:bg-[#8B0000] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <span>Read Full Notice</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="text-xs font-semibold text-[#8B0000] bg-[#FDECEC] px-2.5 py-1 rounded-lg border border-[#F8D0D0]">
+                    Verified Circular
+                  </span>
                 </div>
               </div>
-            ))}
-          </div>
+            )}
 
-        </div>
+            {/* Smaller Announcement List Cards */}
+            <div className="lg:col-span-5 space-y-4">
+              {remaining.slice(0, 3).map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => setSelectedAnnouncement(item)}
+                  className="bg-[#FAFAFA] hover:bg-white p-5 rounded-2xl border border-[#E5E5E5] hover:border-[#B5121B] transition-all shadow-xs hover:shadow-md cursor-pointer group flex flex-col justify-between"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#8B0000] bg-[#FDECEC] px-2 py-0.5 rounded border border-[#F8D0D0]">
+                        {item.category}
+                      </span>
+                      <span className="text-[11px] text-[#666666]">{item.date}</span>
+                    </div>
+
+                    <h4 className="text-sm font-bold text-[#171717] group-hover:text-[#B5121B] transition-colors leading-snug line-clamp-2">
+                      {item.title}
+                    </h4>
+
+                    <p className="text-xs text-[#666666] line-clamp-2">
+                      {item.summary}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 mt-1 flex items-center justify-between text-xs font-bold text-[#B5121B]">
+                    <span>View announcement</span>
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+          </div>
+        )}
 
         {/* View All CTA on Homepage */}
         {!showAll && onViewAllAnnouncements && (

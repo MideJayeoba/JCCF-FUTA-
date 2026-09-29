@@ -1,5 +1,1 @@
-import { Announcement } from '../types';
-
-export const ANNOUNCEMENTS: Announcement[] = [
-
-];
+export { ANNOUNCEMENTS } from './static/initialAnnouncements';

@@ -40,13 +40,8 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
   // Categories
   const categories = ['All', 'Sermon', 'Mega Praise', 'Worship', 'Seminar', 'Podcast'];
 
-  // Auto-sync if mediaList is empty and hasn't synced yet (silently in the background)
-  useEffect(() => {
-    if (mediaList.length === 0 && !hasAttemptedAutoSync) {
-      setHasAttemptedAutoSync(true);
-      fetchYouTubeVideos();
-    }
-  }, [mediaList.length, hasAttemptedAutoSync, fetchYouTubeVideos]);
+  // Empty state banner when no media exists in the database
+  const isEmpty = mediaList.length === 0;
 
   // Handle Escape key to close modal
   useEffect(() => {
@@ -127,17 +122,23 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
         )}
 
         {/* Empty State Graceful Banner */}
-        {filteredMedia.length === 0 && (
+        {mediaList.length === 0 ? (
           <div className="bg-white rounded-3xl border border-[#E5E5E5] p-12 text-center max-w-2xl mx-auto shadow-xs">
-            <div className="w-16 h-16 rounded-full bg-[#FDECEC] text-[#B5121B] flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-full bg-[#FDECEC] text-[#B5121B] flex items-center justify-center mx-auto mb-4 border border-[#F8D0D0]">
               <Radio className="w-8 h-8" />
             </div>
-            <h3 className="text-lg font-bold text-[#171717] font-heading">Loading Media Broadcasts</h3>
-            <p className="text-xs sm:text-sm text-[#666666] mt-2 leading-relaxed">
-              Fetching official broadcasts from @jccf_futa...
+            <h3 className="text-lg font-bold text-[#171717] font-heading">No Media Broadcasts in Database Yet</h3>
+            <p className="text-xs sm:text-sm text-[#666666] mt-2 leading-relaxed max-w-md mx-auto">
+              There are currently no media broadcasts, sermons, or worship videos recorded in the database. When messages or live recordings are published, they will appear here.
             </p>
           </div>
-        )}
+        ) : filteredMedia.length === 0 ? (
+          <div className="bg-white rounded-3xl border border-[#E5E5E5] p-10 text-center max-w-xl mx-auto shadow-xs">
+            <Radio className="w-10 h-10 text-[#666666] mx-auto mb-3 opacity-60" />
+            <h3 className="text-base font-bold text-[#171717]">No Matching Broadcasts Found</h3>
+            <p className="text-xs text-[#666666] mt-1">Try searching with another keyword or selecting a different category.</p>
+          </div>
+        ) : null}
 
         {/* TOP 5 FEATURED SPOTLIGHT BROADCASTS */}
         {topFive.length > 0 && (

@@ -2,24 +2,30 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 const { Pool } = pg;
 import * as schema from './schema.ts';
-
-// SSL verification for cloud PostgreSQL providers (Supabase, Neon, Cloud SQL) is relaxed per-pool
-// via the `ssl` option below — we deliberately avoid the process-wide NODE_TLS_REJECT_UNAUTHORIZED
-// switch so outbound HTTPS (YouTube, oEmbed, etc.) keeps full certificate validation.
+import bcrypt from 'bcryptjs';
 
 declare global {
   var _postgresPool: pg.Pool | undefined;
+  var _isDbReady: boolean | undefined;
 }
+
+export const isDatabaseConfigured = (): boolean => {
+  const url = (process.env.DATABASE_URL || '').trim();
+  return Boolean(url && (url.startsWith('postgres://') || url.startsWith('postgresql://')));
+};
 
 export const createPool = (): pg.Pool => {
   if (!global._postgresPool) {
     const rawConnectionString = (process.env.DATABASE_URL || '').trim();
 
-    if (rawConnectionString) {
-      // Strip any search params that might conflict with node-postgres SSL configuration
+    if (rawConnectionString && (rawConnectionString.startsWith('postgres://') || rawConnectionString.startsWith('postgresql://'))) {
       let cleanConnStr = rawConnectionString;
+      let isNeon = rawConnectionString.includes('neon.tech');
+      let isLocal = rawConnectionString.includes('localhost') || rawConnectionString.includes('127.0.0.1');
+
       try {
         const parsed = new URL(rawConnectionString);
+        // Retain pathname and credentials, remove query parameters that cause node-postgres SSL conflicts
         parsed.search = '';
         cleanConnStr = parsed.toString();
       } catch (_) {
@@ -28,32 +34,40 @@ export const createPool = (): pg.Pool => {
         }
       }
 
-      const isLocal = cleanConnStr.includes('localhost') || cleanConnStr.includes('127.0.0.1');
-
       global._postgresPool = new Pool({
         connectionString: cleanConnStr,
         ssl: isLocal ? false : { rejectUnauthorized: false },
-        max: 10,
-        connectionTimeoutMillis: 15000,
+        max: isNeon ? 10 : 10,
+        connectionTimeoutMillis: 15000, // Neon serverless wake-up leeway
+        idleTimeoutMillis: 30000,
+        keepAlive: true,
       });
+
+      console.log(`🔌 PostgreSQL pool initialized (${isNeon ? 'Neon Serverless' : (isLocal ? 'Localhost' : 'Cloud PostgreSQL')}).`);
     } else {
-      // Fallback local connection when no DATABASE_URL is supplied
+      // Dummy pool with disabled auto-connect when no DATABASE_URL is supplied
       global._postgresPool = new Pool({
-        connectionString: 'postgresql://postgres:postgres@localhost:5432/postgres',
+        connectionString: 'postgresql://localhost:5432/disabled',
         ssl: false,
-        max: 5,
-        connectionTimeoutMillis: 5000,
+        max: 1,
+        connectionTimeoutMillis: 1000,
       });
     }
 
     global._postgresPool.on('error', (err) => {
-      console.warn('PostgreSQL pool notice:', err.message);
+      console.warn('PostgreSQL pool connection notice:', err.message);
     });
   }
   return global._postgresPool;
 };
 
-export const initDatabaseTables = async () => {
+export const initDatabaseTables = async (): Promise<boolean> => {
+  if (!isDatabaseConfigured()) {
+    console.log('ℹ️ DATABASE_URL not set. Running with persistent file-backed data store.');
+    global._isDbReady = false;
+    return false;
+  }
+
   const p = createPool();
   try {
     await p.query(`
@@ -158,6 +172,9 @@ export const initDatabaseTables = async () => {
       );
 
       ALTER TABLE historical_executives ADD COLUMN IF NOT EXISTS generation TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS security_pin TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS portfolio TEXT;
 
       CREATE TABLE IF NOT EXISTS media (
         id SERIAL PRIMARY KEY,
@@ -193,19 +210,39 @@ export const initDatabaseTables = async () => {
         updated_at TIMESTAMP DEFAULT NOW()
       );
     `);
-    console.log('✅ PostgreSQL database tables initialized successfully.');
 
-    // Seed database only if explicitly enabled (prevent overriding production data)
-    if (process.env.RUN_SEEDING === 'true') {
-      const { seedDatabaseIfEmpty } = await import('./seed.ts');
-      await seedDatabaseIfEmpty();
-    } else {
-      console.log('ℹ️ Database seeding skipped. Set RUN_SEEDING="true" in .env to seed initial data.');
-    }
+    // Ensure superadmin & admin details are in PostgreSQL with hashed passwords
+    const superEmail = (process.env.SUPERADMIN_EMAIL || 'jayeobapeace19459@gmail.com').toLowerCase().trim();
+    const superPin = (process.env.SUPERADMIN_PIN || '1945').trim();
+    const superHash = await bcrypt.hash(superPin, 10);
+
+    const proEmail = (process.env.PRO_ADMIN_EMAIL || 'pro@jccf-futa.org').toLowerCase().trim();
+    const proPin = (process.env.PRO_ADMIN_PIN || '1945').trim();
+    const proHash = await bcrypt.hash(proPin, 10);
+
+    await p.query(`
+      INSERT INTO users (uid, email, display_name, photo_url, role, portfolio, password_hash, security_pin, phone, last_login_at)
+      VALUES 
+        ('superadmin-jayeoba-peace', $1, 'Jayeoba Peace Olamide', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80', 'superadmin', 'Central Executive Council / Superadmin', $2, NULL, '+234 813 987 6543', NOW()),
+        ('admin-futa-pro', $3, 'JCCF PRO Directorate', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80', 'admin', 'Public Relations Directorate', $4, NULL, '+234 814 567 8901', NOW())
+      ON CONFLICT (uid) DO UPDATE SET
+        email = EXCLUDED.email,
+        display_name = EXCLUDED.display_name,
+        role = EXCLUDED.role,
+        portfolio = EXCLUDED.portfolio,
+        password_hash = COALESCE(users.password_hash, EXCLUDED.password_hash);
+    `, [superEmail, superHash, proEmail, proHash]);
+
+    console.log('✅ PostgreSQL (Neon) database initialized and administrator accounts verified.');
+    global._isDbReady = true;
+    return true;
   } catch (err: any) {
     console.warn('PostgreSQL table initialization notice:', err.message);
+    global._isDbReady = false;
+    return false;
   }
 };
 
 const pool = createPool();
 export const db = drizzle(pool, { schema });
+export const isDbReady = () => Boolean(global._isDbReady);

@@ -87,7 +87,7 @@ export const GivePage: React.FC<GivePageProps> = ({ onOpenGiveModal }) => {
         amount: numAmount,
         purpose,
         reference,
-        paymentMethod: 'Manual Bank Transfer (Wema Bank)',
+        paymentMethod: 'Bank Transfer',
         status: 'Completed',
         channelDetails: 'Direct Wema Bank Transfer (0222953276 / 0242883780)'
       });

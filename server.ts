@@ -2,7 +2,8 @@ import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
-import { db, initDatabaseTables, createPool } from './src/db/index.ts';
+import { db, initDatabaseTables, createPool, isDatabaseConfigured } from './src/db/index.ts';
+import { persistentStore } from './src/db/persistentStore.ts';
 import { 
   announcements, 
   events, 
@@ -40,8 +41,8 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Initialize PostgreSQL database tables if connecting to Supabase / PostgreSQL
-  initDatabaseTables().catch(err => console.warn('Init tables error:', err));
+  // Initialize PostgreSQL database tables if connecting to Supabase / PostgreSQL / Neon
+  await initDatabaseTables().catch(err => console.warn('Init tables notice:', err));
 
   // 1. Health check
   app.get('/api/health', (req, res) => {
@@ -280,17 +281,26 @@ async function startServer() {
         });
       }
 
-      // 1. Fetch live admin users and settings from PostgreSQL database
+      // 1. Fetch live admin users and settings from PostgreSQL database or persistent store
       let dbAdminUsers: any[] = [];
       let dbSettings: Record<string, string> = {};
       try {
-        dbAdminUsers = await db.select().from(users);
-        const settingsRows = await db.select().from(systemSettings);
-        settingsRows.forEach(r => {
-          dbSettings[r.key] = r.value;
-        });
+        if (isDatabaseConfigured()) {
+          dbAdminUsers = await db.select().from(users);
+          const settingsRows = await db.select().from(systemSettings);
+          settingsRows.forEach(r => {
+            dbSettings[r.key] = r.value;
+          });
+        }
       } catch (dbErr) {
         console.warn('DB fetch notice during admin login:', dbErr);
+      }
+
+      if (dbAdminUsers.length === 0) {
+        dbAdminUsers = persistentStore.getTable('users');
+      }
+      if (Object.keys(dbSettings).length === 0) {
+        dbSettings = persistentStore.getAllSettings();
       }
 
       const superPin = (dbSettings.superadmin_pin || dbSettings.superadminPin || process.env.SUPERADMIN_PIN || '1945').trim();
@@ -813,26 +823,41 @@ async function startServer() {
   // 3. Announcements
   app.get('/api/announcements', async (req, res) => {
     try {
-      const data = await db.select().from(announcements).orderBy(desc(announcements.id));
-      res.json(data);
+      if (isDatabaseConfigured()) {
+        const data = await db.select().from(announcements).orderBy(desc(announcements.id));
+        return res.json(data || []);
+      }
+      res.json(persistentStore.getTable('announcements') || []);
     } catch (error: any) {
-      console.warn('DB note fetching announcements:', error.message || error);
-      res.json([]);
+      console.warn('DB note fetching announcements (using store fallback):', error.message || error);
+      res.json(persistentStore.getTable('announcements') || []);
     }
   });
 
   app.post('/api/announcements', requireAdmin, async (req: AuthRequest, res) => {
     try {
       const { title, content, category, date, author, pinned } = req.body;
-      const result = await db.insert(announcements).values({
+      const record = {
         title,
         content,
         category: category || 'General',
         date: date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         author: author || req.user?.name || 'Central Executive Council',
         pinned: Boolean(pinned),
-      }).returning();
-      res.status(201).json(result[0]);
+      };
+
+      const savedInStore = persistentStore.insert('announcements', record);
+
+      if (isDatabaseConfigured()) {
+        try {
+          const result = await db.insert(announcements).values(record).returning();
+          return res.status(201).json(result[0]);
+        } catch (dbErr) {
+          console.warn('DB announcement insert fallback to store:', dbErr);
+        }
+      }
+
+      res.status(201).json(savedInStore);
     } catch (error: any) {
       console.error('Error creating announcement:', error);
       res.status(500).json({ error: 'Failed to create announcement' });
@@ -843,16 +868,27 @@ async function startServer() {
     try {
       const id = parseInt(req.params.id, 10);
       const { title, content, category, date, author, pinned } = req.body;
-      const result = await db.update(announcements).set({
+      const patch = {
         title,
         content,
         category,
         date,
         author,
         pinned: Boolean(pinned),
-      }).where(eq(announcements.id, id)).returning();
-      if (result.length === 0) return res.status(404).json({ error: 'Announcement not found' });
-      res.json(result[0]);
+      };
+
+      persistentStore.update('announcements', id, patch);
+
+      if (isDatabaseConfigured()) {
+        try {
+          const result = await db.update(announcements).set(patch).where(eq(announcements.id, id)).returning();
+          if (result.length > 0) return res.json(result[0]);
+        } catch (dbErr) {
+          console.warn('DB announcement update fallback to store:', dbErr);
+        }
+      }
+
+      res.json({ id, ...patch });
     } catch (error: any) {
       console.error('Error updating announcement:', error);
       res.status(500).json({ error: 'Failed to update announcement' });
@@ -862,9 +898,18 @@ async function startServer() {
   app.delete('/api/announcements/:id', requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
-      if (!isNaN(id)) {
-        await db.delete(announcements).where(eq(announcements.id, id));
+      persistentStore.delete('announcements', id);
+
+      if (isDatabaseConfigured()) {
+        try {
+          if (!isNaN(id)) {
+            await db.delete(announcements).where(eq(announcements.id, id));
+          }
+        } catch (dbErr) {
+          console.warn('DB announcement delete fallback to store:', dbErr);
+        }
       }
+
       res.json({ success: true, message: 'Announcement deleted' });
     } catch (error: any) {
       console.error('Error deleting announcement:', error);
@@ -875,18 +920,21 @@ async function startServer() {
   // 4. Events
   app.get('/api/events', async (req, res) => {
     try {
-      const data = await db.select().from(events).orderBy(desc(events.id));
-      res.json(data);
+      if (isDatabaseConfigured()) {
+        const data = await db.select().from(events).orderBy(desc(events.id));
+        return res.json(data || []);
+      }
+      res.json(persistentStore.getTable('events') || []);
     } catch (error: any) {
-      console.warn('DB note fetching events:', error.message || error);
-      res.json([]);
+      console.warn('DB note fetching events (using store fallback):', error.message || error);
+      res.json(persistentStore.getTable('events') || []);
     }
   });
 
   app.post('/api/events', requireAdmin, async (req, res) => {
     try {
       const { title, theme, date, time, venue, category, description, featured } = req.body;
-      const result = await db.insert(events).values({
+      const record = {
         title,
         theme: theme || '',
         date,
@@ -895,8 +943,20 @@ async function startServer() {
         category: category || 'Conference',
         description,
         featured: Boolean(featured),
-      }).returning();
-      res.status(201).json(result[0]);
+      };
+
+      const savedInStore = persistentStore.insert('events', record);
+
+      if (isDatabaseConfigured()) {
+        try {
+          const result = await db.insert(events).values(record).returning();
+          return res.status(201).json(result[0]);
+        } catch (dbErr) {
+          console.warn('DB event insert fallback to store:', dbErr);
+        }
+      }
+
+      res.status(201).json(savedInStore);
     } catch (error: any) {
       console.error('Error creating event:', error);
       res.status(500).json({ error: 'Failed to create event' });
@@ -908,7 +968,7 @@ async function startServer() {
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) return res.status(400).json({ error: 'Invalid event ID' });
       const { title, theme, date, time, venue, category, description, featured } = req.body;
-      const result = await db.update(events).set({
+      const patch = {
         title,
         theme,
         date,
@@ -917,9 +977,20 @@ async function startServer() {
         category,
         description,
         featured: Boolean(featured),
-      }).where(eq(events.id, id)).returning();
-      if (result.length === 0) return res.status(404).json({ error: 'Event not found' });
-      res.json(result[0]);
+      };
+
+      persistentStore.update('events', id, patch);
+
+      if (isDatabaseConfigured()) {
+        try {
+          const result = await db.update(events).set(patch).where(eq(events.id, id)).returning();
+          if (result.length > 0) return res.json(result[0]);
+        } catch (dbErr) {
+          console.warn('DB event update fallback to store:', dbErr);
+        }
+      }
+
+      res.json({ id, ...patch });
     } catch (error: any) {
       console.error('Error updating event:', error);
       res.status(500).json({ error: 'Failed to update event' });
@@ -929,9 +1000,18 @@ async function startServer() {
   app.delete('/api/events/:id', requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
-      if (!isNaN(id)) {
-        await db.delete(events).where(eq(events.id, id));
+      persistentStore.delete('events', id);
+
+      if (isDatabaseConfigured()) {
+        try {
+          if (!isNaN(id)) {
+            await db.delete(events).where(eq(events.id, id));
+          }
+        } catch (dbErr) {
+          console.warn('DB event delete fallback to store:', dbErr);
+        }
       }
+
       res.json({ success: true, message: 'Event deleted' });
     } catch (error: any) {
       console.error('Error deleting event:', error);
@@ -942,11 +1022,14 @@ async function startServer() {
   // 5. Fellowships
   app.get('/api/fellowships', async (req, res) => {
     try {
-      const data = await db.select().from(fellowships);
-      res.json(data);
+      if (isDatabaseConfigured()) {
+        const data = await db.select().from(fellowships);
+        return res.json(data || []);
+      }
+      res.json(persistentStore.getTable('fellowships') || []);
     } catch (error: any) {
-      console.warn('DB note fetching fellowships:', error.message || error);
-      res.json([]);
+      console.warn('DB note fetching fellowships (using store fallback):', error.message || error);
+      res.json(persistentStore.getTable('fellowships') || []);
     }
   });
 
@@ -956,7 +1039,7 @@ async function startServer() {
       if (!name || !acronym) {
         return res.status(400).json({ error: 'Fellowship name and acronym are required' });
       }
-      const result = await db.insert(fellowships).values({
+      const record = {
         name,
         acronym,
         category: category || 'Denominational',
@@ -967,22 +1050,41 @@ async function startServer() {
         description: description || 'Campus Christian fellowship operating under JCCF FUTA.',
         logoUrl: logoUrl || '',
         mapUrl: mapUrl || '',
-      }).returning();
-      res.status(201).json(result[0]);
+      };
+
+      const savedInStore = persistentStore.insert('fellowships', {
+        ...record,
+        meeting_days: record.meetingDays,
+        president_name: record.presidentName,
+        president_phone: record.presidentPhone,
+        logo_url: record.logoUrl,
+        map_url: record.mapUrl
+      });
+
+      if (isDatabaseConfigured()) {
+        try {
+          const result = await db.insert(fellowships).values(record).returning();
+          return res.status(201).json(result[0]);
+        } catch (dbErr) {
+          console.warn('DB fellowship insert fallback to store:', dbErr);
+        }
+      }
+
+      res.status(201).json(savedInStore);
     } catch (error: any) {
       console.error('Error creating fellowship:', error);
       res.status(500).json({ error: 'Failed to create fellowship' });
     }
   });
 
-  // Public Fellowship Registration Endpoint (Direct PostgreSQL Persistence)
+  // Public Fellowship Registration Endpoint (Direct Persistence)
   app.post('/api/fellowships/register', async (req, res) => {
     try {
       const { name, acronym, category, meetingDays, venue, presidentName, presidentPhone, description, logoUrl, mapUrl } = req.body;
       if (!name || !acronym) {
         return res.status(400).json({ error: 'Fellowship name and acronym are required' });
       }
-      const result = await db.insert(fellowships).values({
+      const record = {
         name,
         acronym,
         category: category || 'Denominational',
@@ -993,8 +1095,27 @@ async function startServer() {
         description: description || 'Registered member fellowship under the Joint Christian Campus Fellowship (JCCF) FUTA.',
         logoUrl: logoUrl || '',
         mapUrl: mapUrl || '',
-      }).returning();
-      res.status(201).json(result[0]);
+      };
+
+      const savedInStore = persistentStore.insert('fellowships', {
+        ...record,
+        meeting_days: record.meetingDays,
+        president_name: record.presidentName,
+        president_phone: record.presidentPhone,
+        logo_url: record.logoUrl,
+        map_url: record.mapUrl
+      });
+
+      if (isDatabaseConfigured()) {
+        try {
+          const result = await db.insert(fellowships).values(record).returning();
+          return res.status(201).json(result[0]);
+        } catch (dbErr) {
+          console.warn('DB fellowship register fallback to store:', dbErr);
+        }
+      }
+
+      res.status(201).json(savedInStore);
     } catch (error: any) {
       console.error('Error registering fellowship in database:', error);
       res.status(500).json({ error: 'Failed to register fellowship in database' });
@@ -1006,7 +1127,7 @@ async function startServer() {
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) return res.status(400).json({ error: 'Invalid fellowship ID' });
       const { name, acronym, category, meetingDays, venue, presidentName, presidentPhone, description, logoUrl, mapUrl } = req.body;
-      const result = await db.update(fellowships).set({
+      const patch = {
         name,
         acronym,
         category,
@@ -1017,9 +1138,27 @@ async function startServer() {
         description,
         logoUrl,
         mapUrl,
-      }).where(eq(fellowships.id, id)).returning();
-      if (result.length === 0) return res.status(404).json({ error: 'Fellowship not found' });
-      res.json(result[0]);
+      };
+
+      persistentStore.update('fellowships', id, {
+        ...patch,
+        meeting_days: patch.meetingDays,
+        president_name: patch.presidentName,
+        president_phone: patch.presidentPhone,
+        logo_url: patch.logoUrl,
+        map_url: patch.mapUrl
+      });
+
+      if (isDatabaseConfigured()) {
+        try {
+          const result = await db.update(fellowships).set(patch).where(eq(fellowships.id, id)).returning();
+          if (result.length > 0) return res.json(result[0]);
+        } catch (dbErr) {
+          console.warn('DB fellowship update fallback to store:', dbErr);
+        }
+      }
+
+      res.json({ id, ...patch });
     } catch (error: any) {
       console.error('Error updating fellowship:', error);
       res.status(500).json({ error: 'Failed to update fellowship' });
@@ -1029,9 +1168,18 @@ async function startServer() {
   app.delete('/api/fellowships/:id', requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
-      if (!isNaN(id)) {
-        await db.delete(fellowships).where(eq(fellowships.id, id));
+      persistentStore.delete('fellowships', id);
+
+      if (isDatabaseConfigured()) {
+        try {
+          if (!isNaN(id)) {
+            await db.delete(fellowships).where(eq(fellowships.id, id));
+          }
+        } catch (dbErr) {
+          console.warn('DB fellowship delete fallback to store:', dbErr);
+        }
       }
+
       res.json({ success: true, message: 'Fellowship deleted' });
     } catch (error: any) {
       console.error('Error deleting fellowship:', error);
@@ -1042,18 +1190,21 @@ async function startServer() {
   // 6. Executives
   app.get('/api/executives', async (req, res) => {
     try {
-      const data = await db.select().from(executives);
-      res.json(data);
+      if (isDatabaseConfigured()) {
+        const data = await db.select().from(executives);
+        return res.json(data || []);
+      }
+      res.json(persistentStore.getTable('executives') || []);
     } catch (error: any) {
-      console.warn('DB note fetching executives:', error.message || error);
-      res.json([]);
+      console.warn('DB note fetching executives (using store fallback):', error.message || error);
+      res.json(persistentStore.getTable('executives') || []);
     }
   });
 
   app.post('/api/executives', requireAdmin, async (req, res) => {
     try {
       const { name, office, department, level, phone, email, session, fellowship, photoUrl, bio } = req.body;
-      const result = await db.insert(executives).values({
+      const record = {
         name,
         office,
         department,
@@ -1061,11 +1212,26 @@ async function startServer() {
         phone,
         email,
         session: session || '2025/2026',
-        fellowship,
+        fellowship: fellowship || 'JCCF FUTA',
         photoUrl: photoUrl || '',
         bio: bio || '',
-      }).returning();
-      res.status(201).json(result[0]);
+      };
+
+      const savedInStore = persistentStore.insert('executives', {
+        ...record,
+        photo_url: record.photoUrl
+      });
+
+      if (isDatabaseConfigured()) {
+        try {
+          const result = await db.insert(executives).values(record).returning();
+          return res.status(201).json(result[0]);
+        } catch (dbErr) {
+          console.warn('DB executive insert fallback to store:', dbErr);
+        }
+      }
+
+      res.status(201).json(savedInStore);
     } catch (error: any) {
       console.error('Error creating executive:', error);
       res.status(500).json({ error: 'Failed to create executive' });
@@ -1077,7 +1243,7 @@ async function startServer() {
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) return res.status(400).json({ error: 'Invalid executive ID' });
       const { name, office, department, level, phone, email, session, fellowship, photoUrl, bio } = req.body;
-      const result = await db.update(executives).set({
+      const patch = {
         name,
         office,
         department,
@@ -1088,9 +1254,23 @@ async function startServer() {
         fellowship,
         photoUrl,
         bio,
-      }).where(eq(executives.id, id)).returning();
-      if (result.length === 0) return res.status(404).json({ error: 'Executive not found' });
-      res.json(result[0]);
+      };
+
+      persistentStore.update('executives', id, {
+        ...patch,
+        photo_url: patch.photoUrl
+      });
+
+      if (isDatabaseConfigured()) {
+        try {
+          const result = await db.update(executives).set(patch).where(eq(executives.id, id)).returning();
+          if (result.length > 0) return res.json(result[0]);
+        } catch (dbErr) {
+          console.warn('DB executive update fallback to store:', dbErr);
+        }
+      }
+
+      res.json({ id, ...patch });
     } catch (error: any) {
       console.error('Error updating executive:', error);
       res.status(500).json({ error: 'Failed to update executive' });
@@ -1100,9 +1280,18 @@ async function startServer() {
   app.delete('/api/executives/:id', requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
-      if (!isNaN(id)) {
-        await db.delete(executives).where(eq(executives.id, id));
+      persistentStore.delete('executives', id);
+
+      if (isDatabaseConfigured()) {
+        try {
+          if (!isNaN(id)) {
+            await db.delete(executives).where(eq(executives.id, id));
+          }
+        } catch (dbErr) {
+          console.warn('DB executive delete fallback to store:', dbErr);
+        }
       }
+
       res.json({ success: true, message: 'Executive deleted' });
     } catch (error: any) {
       console.error('Error deleting executive:', error);
@@ -1113,18 +1302,21 @@ async function startServer() {
   // 7. Constitution, Manuals & Documents
   app.get('/api/resources', async (req, res) => {
     try {
-      const data = await db.select().from(resources).orderBy(desc(resources.id));
-      res.json(data);
+      if (isDatabaseConfigured()) {
+        const data = await db.select().from(resources).orderBy(desc(resources.id));
+        return res.json(data || []);
+      }
+      res.json(persistentStore.getTable('resources') || []);
     } catch (error: any) {
-      console.warn('DB note fetching resources:', error.message || error);
-      res.json([]);
+      console.warn('DB note fetching resources (using store fallback):', error.message || error);
+      res.json(persistentStore.getTable('resources') || []);
     }
   });
 
   app.post('/api/resources', requireAdmin, async (req, res) => {
     try {
       const { title, category, courseCode, department, format, fileSize, downloadUrl, description, uploadedBy } = req.body;
-      const result = await db.insert(resources).values({
+      const record = {
         title,
         category: category || 'Constitutional',
         courseCode: courseCode || '',
@@ -1135,8 +1327,27 @@ async function startServer() {
         downloadsCount: 0,
         description: description || '',
         uploadedBy: uploadedBy || 'JCCF Directorate',
-      }).returning();
-      res.status(201).json(result[0]);
+      };
+
+      const savedInStore = persistentStore.insert('resources', {
+        ...record,
+        course_code: record.courseCode,
+        file_size: record.fileSize,
+        download_url: record.downloadUrl,
+        downloads_count: record.downloadsCount,
+        uploaded_by: record.uploadedBy
+      });
+
+      if (isDatabaseConfigured()) {
+        try {
+          const result = await db.insert(resources).values(record).returning();
+          return res.status(201).json(result[0]);
+        } catch (dbErr) {
+          console.warn('DB resource insert fallback to store:', dbErr);
+        }
+      }
+
+      res.status(201).json(savedInStore);
     } catch (error: any) {
       console.error('Error creating resource:', error);
       res.status(500).json({ error: 'Failed to create resource' });
@@ -1148,7 +1359,7 @@ async function startServer() {
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) return res.status(400).json({ error: 'Invalid resource ID' });
       const { title, category, courseCode, department, format, fileSize, downloadUrl, description, uploadedBy } = req.body;
-      const result = await db.update(resources).set({
+      const patch = {
         title,
         category,
         courseCode,
@@ -1158,9 +1369,26 @@ async function startServer() {
         downloadUrl,
         description,
         uploadedBy,
-      }).where(eq(resources.id, id)).returning();
-      if (result.length === 0) return res.status(404).json({ error: 'Resource not found' });
-      res.json(result[0]);
+      };
+
+      persistentStore.update('resources', id, {
+        ...patch,
+        course_code: patch.courseCode,
+        file_size: patch.fileSize,
+        download_url: patch.downloadUrl,
+        uploaded_by: patch.uploadedBy
+      });
+
+      if (isDatabaseConfigured()) {
+        try {
+          const result = await db.update(resources).set(patch).where(eq(resources.id, id)).returning();
+          if (result.length > 0) return res.json(result[0]);
+        } catch (dbErr) {
+          console.warn('DB resource update fallback to store:', dbErr);
+        }
+      }
+
+      res.json({ id, ...patch });
     } catch (error: any) {
       console.error('Error updating resource:', error);
       res.status(500).json({ error: 'Failed to update resource' });
@@ -1170,9 +1398,18 @@ async function startServer() {
   app.delete('/api/resources/:id', requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
-      if (!isNaN(id)) {
-        await db.delete(resources).where(eq(resources.id, id));
+      persistentStore.delete('resources', id);
+
+      if (isDatabaseConfigured()) {
+        try {
+          if (!isNaN(id)) {
+            await db.delete(resources).where(eq(resources.id, id));
+          }
+        } catch (dbErr) {
+          console.warn('DB resource delete fallback to store:', dbErr);
+        }
       }
+
       res.json({ success: true, message: 'Resource deleted' });
     } catch (error: any) {
       console.error('Error deleting resource:', error);
@@ -1329,24 +1566,27 @@ async function startServer() {
   // 8b. Past Executives & Generational Administrations (Historical Records)
   app.get('/api/historical-executives', async (req, res) => {
     try {
-      const data = await db.select().from(historicalExecutives).orderBy(desc(historicalExecutives.id));
-      const mapped = data.map(item => ({
-        id: String(item.id),
-        tenure: item.tenure,
-        generationName: item.generationName,
-        generation: item.generation || '',
-        theme: item.theme || '',
-        president: item.president,
-        executivesList: item.executivesList || '',
-        mission: item.mission || '',
-        vision: item.vision || '',
-        keyAchievements: item.keyAchievements ? (Array.isArray(JSON.parse(item.keyAchievements)) ? JSON.parse(item.keyAchievements) : [item.keyAchievements]) : [],
-        photoUrl: item.photoUrl || '',
-      }));
-      res.json(mapped);
+      if (isDatabaseConfigured()) {
+        const data = await db.select().from(historicalExecutives).orderBy(desc(historicalExecutives.id));
+        const mapped = (data || []).map(item => ({
+          id: String(item.id),
+          tenure: item.tenure,
+          generationName: item.generationName,
+          generation: item.generation || '',
+          theme: item.theme || '',
+          president: item.president,
+          executivesList: item.executivesList || '',
+          mission: item.mission || '',
+          vision: item.vision || '',
+          keyAchievements: item.keyAchievements ? (Array.isArray(JSON.parse(item.keyAchievements)) ? JSON.parse(item.keyAchievements) : [item.keyAchievements]) : [],
+          photoUrl: item.photoUrl || '',
+        }));
+        return res.json(mapped);
+      }
+      res.json(persistentStore.getTable('historicalExecutives') || []);
     } catch (error: any) {
-      console.warn('DB note fetching historical executives:', error.message || error);
-      res.json([]);
+      console.warn('DB note fetching historical executives (using store fallback):', error.message || error);
+      res.json(persistentStore.getTable('historicalExecutives') || []);
     }
   });
 
@@ -1355,7 +1595,7 @@ async function startServer() {
       const { tenure, generationName, generation, theme, president, executivesList, mission, vision, keyAchievements, photoUrl } = req.body;
       const achStr = Array.isArray(keyAchievements) ? JSON.stringify(keyAchievements) : (typeof keyAchievements === 'string' ? JSON.stringify([keyAchievements]) : '[]');
       
-      const result = await db.insert(historicalExecutives).values({
+      const record = {
         tenure: tenure || '2024/2025',
         generationName: generationName || 'The Trailblazers',
         generation: generation || '',
@@ -1366,22 +1606,39 @@ async function startServer() {
         vision: vision || '',
         keyAchievements: achStr,
         photoUrl: photoUrl || '',
-      }).returning();
+      };
 
-      const created = result[0];
-      res.status(201).json({
-        id: String(created.id),
-        tenure: created.tenure,
-        generationName: created.generationName,
-        generation: created.generation || '',
-        theme: created.theme,
-        president: created.president,
-        executivesList: created.executivesList,
-        mission: created.mission,
-        vision: created.vision,
-        keyAchievements: created.keyAchievements ? JSON.parse(created.keyAchievements) : [],
-        photoUrl: created.photoUrl
+      const savedInStore = persistentStore.insert('historicalExecutives', {
+        ...record,
+        generation_name: record.generationName,
+        executives_list: record.executivesList,
+        key_achievements: record.keyAchievements,
+        photo_url: record.photoUrl
       });
+
+      if (isDatabaseConfigured()) {
+        try {
+          const result = await db.insert(historicalExecutives).values(record).returning();
+          const created = result[0];
+          return res.status(201).json({
+            id: String(created.id),
+            tenure: created.tenure,
+            generationName: created.generationName,
+            generation: created.generation || '',
+            theme: created.theme,
+            president: created.president,
+            executivesList: created.executivesList,
+            mission: created.mission,
+            vision: created.vision,
+            keyAchievements: created.keyAchievements ? JSON.parse(created.keyAchievements) : [],
+            photoUrl: created.photoUrl
+          });
+        } catch (dbErr) {
+          console.warn('DB historical executive insert fallback to store:', dbErr);
+        }
+      }
+
+      res.status(201).json(savedInStore);
     } catch (error: any) {
       console.error('Error creating historical executive:', error);
       res.status(500).json({ error: 'Failed to create historical executive' });
@@ -1409,23 +1666,39 @@ async function startServer() {
       };
       if (achStr !== undefined) updateData.keyAchievements = achStr;
 
-      const result = await db.update(historicalExecutives).set(updateData).where(eq(historicalExecutives.id, id)).returning();
-      if (result.length === 0) return res.status(404).json({ error: 'Record not found' });
-      
-      const updated = result[0];
-      res.json({
-        id: String(updated.id),
-        tenure: updated.tenure,
-        generationName: updated.generationName,
-        generation: updated.generation || '',
-        theme: updated.theme,
-        president: updated.president,
-        executivesList: updated.executivesList,
-        mission: updated.mission,
-        vision: updated.vision,
-        keyAchievements: updated.keyAchievements ? JSON.parse(updated.keyAchievements) : [],
-        photoUrl: updated.photoUrl
+      persistentStore.update('historicalExecutives', id, {
+        ...updateData,
+        generation_name: updateData.generationName,
+        executives_list: updateData.executivesList,
+        key_achievements: updateData.keyAchievements,
+        photo_url: updateData.photoUrl
       });
+
+      if (isDatabaseConfigured()) {
+        try {
+          const result = await db.update(historicalExecutives).set(updateData).where(eq(historicalExecutives.id, id)).returning();
+          if (result.length > 0) {
+            const updated = result[0];
+            return res.json({
+              id: String(updated.id),
+              tenure: updated.tenure,
+              generationName: updated.generationName,
+              generation: updated.generation || '',
+              theme: updated.theme,
+              president: updated.president,
+              executivesList: updated.executivesList,
+              mission: updated.mission,
+              vision: updated.vision,
+              keyAchievements: updated.keyAchievements ? JSON.parse(updated.keyAchievements) : [],
+              photoUrl: updated.photoUrl
+            });
+          }
+        } catch (dbErr) {
+          console.warn('DB historical executive update fallback to store:', dbErr);
+        }
+      }
+
+      res.json({ id, ...updateData });
     } catch (error: any) {
       console.error('Error updating historical executive:', error);
       res.status(500).json({ error: 'Failed to update historical executive' });
@@ -1499,30 +1772,33 @@ async function startServer() {
   // 8c. Media Vault & Broadcasts
   app.get('/api/media', async (req, res) => {
     try {
-      const data = await db.select().from(media).orderBy(desc(media.id));
-      const mapped = data.map(item => ({
-        id: String(item.id),
-        title: item.title,
-        category: item.category,
-        duration: item.duration,
-        date: item.date,
-        minister: item.minister,
-        thumbnail: item.thumbnail,
-        youtubeId: item.youtubeId,
-        description: item.description,
-        views: item.views || '1.2K views'
-      }));
-      res.json(mapped);
+      if (isDatabaseConfigured()) {
+        const data = await db.select().from(media).orderBy(desc(media.id));
+        const mapped = (data || []).map(item => ({
+          id: String(item.id),
+          title: item.title,
+          category: item.category,
+          duration: item.duration,
+          date: item.date,
+          minister: item.minister,
+          thumbnail: item.thumbnail,
+          youtubeId: item.youtubeId,
+          description: item.description,
+          views: item.views || '1.2K views'
+        }));
+        return res.json(mapped);
+      }
+      res.json(persistentStore.getTable('media') || []);
     } catch (error: any) {
-      console.warn('DB note fetching media:', error.message || error);
-      res.json([]);
+      console.warn('DB note fetching media (using store fallback):', error.message || error);
+      res.json(persistentStore.getTable('media') || []);
     }
   });
 
   app.post('/api/media', requireAdmin, async (req, res) => {
     try {
       const { title, category, duration, date, minister, thumbnail, youtubeId, description, views } = req.body;
-      const result = await db.insert(media).values({
+      const record = {
         title: title || 'JCCF Broadcast',
         category: category || 'Sermon',
         duration: duration || '1 hr',
@@ -1532,8 +1808,23 @@ async function startServer() {
         youtubeId: youtubeId || 'dQw4w9WgXcQ',
         description: description || '',
         views: views || '1.5K views'
-      }).returning();
-      res.status(201).json(result[0]);
+      };
+
+      const savedInStore = persistentStore.insert('media', {
+        ...record,
+        youtube_id: record.youtubeId
+      });
+
+      if (isDatabaseConfigured()) {
+        try {
+          const result = await db.insert(media).values(record).returning();
+          return res.status(201).json(result[0]);
+        } catch (dbErr) {
+          console.warn('DB media insert fallback to store:', dbErr);
+        }
+      }
+
+      res.status(201).json(savedInStore);
     } catch (error: any) {
       console.error('Error creating media:', error);
       res.status(500).json({ error: 'Failed to create media' });
@@ -1545,7 +1836,7 @@ async function startServer() {
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) return res.status(400).json({ error: 'Invalid ID' });
       const { title, category, duration, date, minister, thumbnail, youtubeId, description, views } = req.body;
-      const result = await db.update(media).set({
+      const patch = {
         title,
         category,
         duration,
@@ -1555,9 +1846,23 @@ async function startServer() {
         youtubeId,
         description,
         views
-      }).where(eq(media.id, id)).returning();
-      if (result.length === 0) return res.status(404).json({ error: 'Media item not found' });
-      res.json(result[0]);
+      };
+
+      persistentStore.update('media', id, {
+        ...patch,
+        youtube_id: patch.youtubeId
+      });
+
+      if (isDatabaseConfigured()) {
+        try {
+          const result = await db.update(media).set(patch).where(eq(media.id, id)).returning();
+          if (result.length > 0) return res.json(result[0]);
+        } catch (dbErr) {
+          console.warn('DB media update fallback to store:', dbErr);
+        }
+      }
+
+      res.json({ id, ...patch });
     } catch (error: any) {
       console.error('Error updating media:', error);
       res.status(500).json({ error: 'Failed to update media' });
@@ -1567,9 +1872,18 @@ async function startServer() {
   app.delete('/api/media/:id', requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
-      if (!isNaN(id)) {
-        await db.delete(media).where(eq(media.id, id));
+      persistentStore.delete('media', id);
+
+      if (isDatabaseConfigured()) {
+        try {
+          if (!isNaN(id)) {
+            await db.delete(media).where(eq(media.id, id));
+          }
+        } catch (dbErr) {
+          console.warn('DB media delete fallback to store:', dbErr);
+        }
       }
+
       res.json({ success: true, message: 'Media item deleted' });
     } catch (error: any) {
       console.error('Error deleting media:', error);
@@ -1580,15 +1894,20 @@ async function startServer() {
   // 9. System Settings
   app.get('/api/settings', async (req, res) => {
     try {
-      const rows = await db.select().from(systemSettings);
-      const settingsMap: Record<string, string> = {};
-      rows.forEach(r => {
-        settingsMap[r.key] = r.value;
-      });
-      res.json(settingsMap);
+      if (isDatabaseConfigured()) {
+        const rows = await db.select().from(systemSettings);
+        if (rows && rows.length > 0) {
+          const settingsMap: Record<string, string> = {};
+          rows.forEach(r => {
+            settingsMap[r.key] = r.value;
+          });
+          return res.json(settingsMap);
+        }
+      }
+      res.json(persistentStore.getAllSettings());
     } catch (error: any) {
-      console.warn('DB note fetching settings:', error.message || error);
-      res.json({});
+      console.warn('DB note fetching settings (using store fallback):', error.message || error);
+      res.json(persistentStore.getAllSettings());
     }
   });
 
@@ -1596,12 +1915,19 @@ async function startServer() {
     try {
       const updates = req.body as Record<string, string>;
       for (const [key, value] of Object.entries(updates)) {
-        await db.insert(systemSettings)
-          .values({ key, value: String(value), updatedAt: new Date() })
-          .onConflictDoUpdate({
-            target: systemSettings.key,
-            set: { value: String(value), updatedAt: new Date() }
-          });
+        persistentStore.setSetting(key, String(value));
+        if (isDatabaseConfigured()) {
+          try {
+            await db.insert(systemSettings)
+              .values({ key, value: String(value), updatedAt: new Date() })
+              .onConflictDoUpdate({
+                target: systemSettings.key,
+                set: { value: String(value), updatedAt: new Date() }
+              });
+          } catch (dbErr) {
+            console.warn(`DB setting ${key} update notice:`, dbErr);
+          }
+        }
       }
       res.json({ success: true, message: 'Settings updated successfully' });
     } catch (error: any) {
@@ -1830,12 +2156,25 @@ async function startServer() {
 
       // Hash password and update in DB
       const hash = await bcrypt.hash(newPassword, 12);
-      await db.update(users)
-        .set({ 
-          passwordHash: hash,
-          securityPin: null // Deactivate the bootstrap PIN
-        })
-        .where(eq(users.id, targetUser.id));
+      persistentStore.update('users', targetUser.id, {
+        password_hash: hash,
+        passwordHash: hash,
+        security_pin: null,
+        securityPin: null
+      });
+
+      if (isDatabaseConfigured()) {
+        try {
+          await db.update(users)
+            .set({ 
+              passwordHash: hash,
+              securityPin: null // Deactivate the bootstrap PIN
+            })
+            .where(eq(users.id, targetUser.id));
+        } catch (dbErr) {
+          console.warn('DB password update notice:', dbErr);
+        }
+      }
 
       res.json({ success: true, message: `Password successfully updated for ${targetUser.email}.` });
     } catch (error: any) {

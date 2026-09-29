@@ -52,6 +52,7 @@ import {
   FellowshipEvent, 
   Fellowship, 
   ExecutiveLeader, 
+  HistoricalExecutive,
   ResourceItem, 
   MediaItem,
   DonationRecord,
@@ -957,51 +958,59 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                     </button>
                   </div>
 
-                  <div className="space-y-2.5">
-                    {announcements.slice(0, 3).map((item) => (
-                      <div
-                        key={item.id}
-                        className="p-3.5 bg-[#FAFAFA] rounded-xl border border-[#E5E5E5] flex items-center justify-between gap-4"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold uppercase text-[#8B0000] bg-[#FDECEC] px-2 py-0.5 rounded border border-[#F8D0D0]">
-                              {item.category}
-                            </span>
-                            {item.isFeatured && (
-                              <span className="text-[10px] font-bold uppercase text-[#008753] bg-[#00B875]/10 px-1.5 py-0.5 rounded">
-                                Pinned
+                  {announcements.length === 0 ? (
+                    <div className="p-6 text-center bg-[#FAFAFA] rounded-xl border border-dashed border-[#E5E5E5] space-y-1">
+                      <Bell className="w-6 h-6 text-[#B5121B] mx-auto opacity-70" />
+                      <p className="text-xs font-bold text-[#171717]">No Published Announcements in Database</p>
+                      <p className="text-[11px] text-[#666666]">Click "Post Announcement" above to publish circulars to the website.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {announcements.slice(0, 3).map((item) => (
+                        <div
+                          key={item.id}
+                          className="p-3.5 bg-[#FAFAFA] rounded-xl border border-[#E5E5E5] flex items-center justify-between gap-4"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold uppercase text-[#8B0000] bg-[#FDECEC] px-2 py-0.5 rounded border border-[#F8D0D0]">
+                                {item.category}
                               </span>
-                            )}
+                              {item.isFeatured && (
+                                <span className="text-[10px] font-bold uppercase text-[#008753] bg-[#00B875]/10 px-1.5 py-0.5 rounded">
+                                  Pinned
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs font-bold text-[#171717] block truncate mt-1">{item.title}</span>
+                            <span className="text-[11px] text-[#666666] block">{item.date} • {item.author}</span>
                           </div>
-                          <span className="text-xs font-bold text-[#171717] block truncate mt-1">{item.title}</span>
-                          <span className="text-[11px] text-[#666666] block">{item.date} • {item.author}</span>
-                        </div>
 
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => {
-                              setActiveAnnouncement(item);
-                              setAnnouncementModalMode('edit');
-                            }}
-                            className="p-1.5 text-[#666666] hover:text-[#B5121B] hover:bg-white rounded-lg transition-colors cursor-pointer"
-                            title="Edit"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm(`Remove "${item.title}"?`)) deleteAnnouncement(item.id);
-                            }}
-                            className="p-1.5 text-[#666666] hover:text-[#B5121B] hover:bg-white rounded-lg transition-colors cursor-pointer"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => {
+                                setActiveAnnouncement(item);
+                                setAnnouncementModalMode('edit');
+                              }}
+                              className="p-1.5 text-[#666666] hover:text-[#B5121B] hover:bg-white rounded-lg transition-colors cursor-pointer"
+                              title="Edit"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`Remove "${item.title}"?`)) deleteAnnouncement(item.id);
+                              }}
+                              className="p-1.5 text-[#666666] hover:text-[#B5121B] hover:bg-white rounded-lg transition-colors cursor-pointer"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Audit Trail */}
@@ -1056,57 +1065,65 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                   </button>
                 </div>
 
-                <div className="space-y-3 pt-2">
-                  {announcements.map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-4 bg-[#FAFAFA] rounded-xl border border-[#E5E5E5] space-y-2 hover:border-[#B5121B] transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-black uppercase tracking-wider bg-[#B5121B] text-white px-2 py-0.5 rounded">
-                            {item.category}
-                          </span>
-                          {item.isFeatured && (
-                            <span className="text-[10px] font-bold uppercase tracking-wider bg-[#FDECEC] text-[#8B0000] px-2 py-0.5 rounded border border-[#F8D0D0]">
-                              Pinned on Home
+                {announcements.length === 0 ? (
+                  <div className="p-8 text-center bg-[#FAFAFA] rounded-xl border border-dashed border-[#E5E5E5] space-y-2">
+                    <Bell className="w-8 h-8 text-[#B5121B] mx-auto opacity-70" />
+                    <p className="text-sm font-bold text-[#171717]">No Announcements in Database</p>
+                    <p className="text-xs text-[#666666]">Click "Create Announcement" above to publish the first official circular to the database.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 pt-2">
+                    {announcements.map((item) => (
+                      <div
+                        key={item.id}
+                        className="p-4 bg-[#FAFAFA] rounded-xl border border-[#E5E5E5] space-y-2 hover:border-[#B5121B] transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-wider bg-[#B5121B] text-white px-2 py-0.5 rounded">
+                              {item.category}
                             </span>
-                          )}
+                            {item.isFeatured && (
+                              <span className="text-[10px] font-bold uppercase tracking-wider bg-[#FDECEC] text-[#8B0000] px-2 py-0.5 rounded border border-[#F8D0D0]">
+                                Pinned on Home
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs text-[#666666]">{item.date}</span>
                         </div>
-                        <span className="text-xs text-[#666666]">{item.date}</span>
-                      </div>
 
-                      <h4 className="text-sm font-bold text-[#171717]">{item.title}</h4>
-                      <p className="text-xs text-[#666666] leading-relaxed line-clamp-2">{item.content}</p>
+                        <h4 className="text-sm font-bold text-[#171717]">{item.title}</h4>
+                        <p className="text-xs text-[#666666] leading-relaxed line-clamp-2">{item.content}</p>
 
-                      <div className="flex items-center justify-between pt-2 border-t border-[#E5E5E5] text-xs text-[#666666]">
-                        <span>Issued by: <strong>{item.author}</strong></span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              setActiveAnnouncement(item);
-                              setAnnouncementModalMode('edit');
-                            }}
-                            className="px-3 py-1 bg-white hover:bg-[#FAFAFA] text-[#171717] rounded-lg border border-[#E5E5E5] text-xs font-bold cursor-pointer transition-colors flex items-center gap-1"
-                          >
-                            <Edit3 className="w-3 h-3 text-[#B5121B]" />
-                            <span>Edit</span>
-                          </button>
+                        <div className="flex items-center justify-between pt-2 border-t border-[#E5E5E5] text-xs text-[#666666]">
+                          <span>Issued by: <strong>{item.author}</strong></span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setActiveAnnouncement(item);
+                                setAnnouncementModalMode('edit');
+                              }}
+                              className="px-3 py-1 bg-white hover:bg-[#FAFAFA] text-[#171717] rounded-lg border border-[#E5E5E5] text-xs font-bold cursor-pointer transition-colors flex items-center gap-1"
+                            >
+                              <Edit3 className="w-3 h-3 text-[#B5121B]" />
+                              <span>Edit</span>
+                            </button>
 
-                          <button
-                            onClick={() => {
-                              if (confirm(`Delete announcement "${item.title}"?`)) deleteAnnouncement(item.id);
-                            }}
-                            className="px-3 py-1 bg-white hover:bg-[#FDECEC] text-[#8B0000] rounded-lg border border-[#E5E5E5] text-xs font-bold cursor-pointer transition-colors flex items-center gap-1"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                            <span>Delete</span>
-                          </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`Delete announcement "${item.title}"?`)) deleteAnnouncement(item.id);
+                              }}
+                              className="px-3 py-1 bg-white hover:bg-[#FDECEC] text-[#8B0000] rounded-lg border border-[#E5E5E5] text-xs font-bold cursor-pointer transition-colors flex items-center gap-1"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Delete</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -1156,61 +1173,69 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                  {mediaList.map((m) => (
-                    <div
-                      key={m.id}
-                      className="p-4 bg-[#FAFAFA] rounded-2xl border border-[#E5E5E5] space-y-3 flex flex-col justify-between hover:border-[#B5121B] transition-colors"
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-black uppercase text-[#B5121B] bg-[#FDECEC] px-2 py-0.5 rounded border border-[#F8D0D0]">
-                            {m.category} • {m.duration}
-                          </span>
-                          <span className="text-[11px] text-[#666666] font-mono">YouTube: {m.youtubeId}</span>
+                {mediaList.length === 0 ? (
+                  <div className="p-8 text-center bg-[#FAFAFA] rounded-xl border border-dashed border-[#E5E5E5] space-y-2">
+                    <Tv className="w-8 h-8 text-[#B5121B] mx-auto opacity-70" />
+                    <p className="text-sm font-bold text-[#171717]">No Media Broadcasts in Database</p>
+                    <p className="text-xs text-[#666666]">Click "Add New Video" or use "Sync YouTube Videos" to populate sermon recordings.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    {mediaList.map((m) => (
+                      <div
+                        key={m.id}
+                        className="p-4 bg-[#FAFAFA] rounded-2xl border border-[#E5E5E5] space-y-3 flex flex-col justify-between hover:border-[#B5121B] transition-colors"
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black uppercase text-[#B5121B] bg-[#FDECEC] px-2 py-0.5 rounded border border-[#F8D0D0]">
+                              {m.category} • {m.duration}
+                            </span>
+                            <span className="text-[11px] text-[#666666] font-mono">YouTube: {m.youtubeId}</span>
+                          </div>
+
+                          <h4 className="text-xs sm:text-sm font-bold text-[#171717] line-clamp-2">{m.title}</h4>
+                          <p className="text-xs text-[#666666] line-clamp-2">{m.description}</p>
+                          <div className="text-xs text-[#666666]">
+                            Minister: <strong className="text-[#171717]">{m.minister}</strong>
+                          </div>
                         </div>
 
-                        <h4 className="text-xs sm:text-sm font-bold text-[#171717] line-clamp-2">{m.title}</h4>
-                        <p className="text-xs text-[#666666] line-clamp-2">{m.description}</p>
-                        <div className="text-xs text-[#666666]">
-                          Minister: <strong className="text-[#171717]">{m.minister}</strong>
+                        <div className="pt-2 border-t border-[#E5E5E5] flex items-center justify-between">
+                          <button
+                            onClick={() => setPreviewMedia(m)}
+                            className="text-xs font-bold text-[#B5121B] hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <Play className="w-3 h-3 fill-[#B5121B]" />
+                            <span>Preview Video</span>
+                          </button>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setActiveMedia(m);
+                                setYoutubeUrlInput(m.youtubeId ? `https://www.youtube.com/watch?v=${m.youtubeId}` : '');
+                                setYtFetchError(null);
+                                setMediaModalMode('edit');
+                              }}
+                              className="px-2.5 py-1 bg-white hover:bg-[#FAFAFA] text-[#171717] rounded-lg border border-[#E5E5E5] text-xs font-bold cursor-pointer"
+                            >
+                              <Edit3 className="w-3 h-3 text-[#B5121B]" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`Remove "${m.title}"?`)) deleteMedia(m.id);
+                              }}
+                              className="px-2.5 py-1 bg-white hover:bg-[#FDECEC] text-[#8B0000] rounded-lg border border-[#E5E5E5] text-xs font-bold cursor-pointer"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
                         </div>
                       </div>
-
-                      <div className="pt-2 border-t border-[#E5E5E5] flex items-center justify-between">
-                        <button
-                          onClick={() => setPreviewMedia(m)}
-                          className="text-xs font-bold text-[#B5121B] hover:underline flex items-center gap-1 cursor-pointer"
-                        >
-                          <Play className="w-3 h-3 fill-[#B5121B]" />
-                          <span>Preview Video</span>
-                        </button>
-
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              setActiveMedia(m);
-                              setYoutubeUrlInput(m.youtubeId ? `https://www.youtube.com/watch?v=${m.youtubeId}` : '');
-                              setYtFetchError(null);
-                              setMediaModalMode('edit');
-                            }}
-                            className="px-2.5 py-1 bg-white hover:bg-[#FAFAFA] text-[#171717] rounded-lg border border-[#E5E5E5] text-xs font-bold cursor-pointer"
-                          >
-                            <Edit3 className="w-3 h-3 text-[#B5121B]" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm(`Remove "${m.title}"?`)) deleteMedia(m.id);
-                            }}
-                            className="px-2.5 py-1 bg-white hover:bg-[#FDECEC] text-[#8B0000] rounded-lg border border-[#E5E5E5] text-xs font-bold cursor-pointer"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -1244,53 +1269,61 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                  {events.map((event) => (
-                    <div
-                      key={event.id}
-                      className="p-4 bg-[#FAFAFA] rounded-2xl border border-[#E5E5E5] space-y-2.5 flex flex-col justify-between hover:border-[#B5121B] transition-colors"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-black uppercase text-[#B5121B] bg-[#FDECEC] px-2 py-0.5 rounded border border-[#F8D0D0]">
-                            {event.category}
-                          </span>
-                          <span className="text-xs font-bold text-[#8B0000]">{event.date}</span>
+                {events.length === 0 ? (
+                  <div className="p-8 text-center bg-[#FAFAFA] rounded-xl border border-dashed border-[#E5E5E5] space-y-2">
+                    <Calendar className="w-8 h-8 text-[#B5121B] mx-auto opacity-70" />
+                    <p className="text-sm font-bold text-[#171717]">No Events in Database</p>
+                    <p className="text-xs text-[#666666]">Click "Create Event" above to add an upcoming gathering or conference.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    {events.map((event) => (
+                      <div
+                        key={event.id}
+                        className="p-4 bg-[#FAFAFA] rounded-2xl border border-[#E5E5E5] space-y-2.5 flex flex-col justify-between hover:border-[#B5121B] transition-colors"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black uppercase text-[#B5121B] bg-[#FDECEC] px-2 py-0.5 rounded border border-[#F8D0D0]">
+                              {event.category}
+                            </span>
+                            <span className="text-xs font-bold text-[#8B0000]">{event.date}</span>
+                          </div>
+
+                          <h4 className="text-sm font-bold text-[#171717] mt-2">{event.title}</h4>
+                          <p className="text-xs text-[#666666] line-clamp-2 mt-1">{event.description}</p>
+                          
+                          <div className="text-[11px] text-[#666666] mt-2 space-y-0.5">
+                            <div>Venue: <strong className="text-[#171717]">{event.venue}</strong></div>
+                            <div>Time: <strong>{event.time}</strong></div>
+                          </div>
                         </div>
 
-                        <h4 className="text-sm font-bold text-[#171717] mt-2">{event.title}</h4>
-                        <p className="text-xs text-[#666666] line-clamp-2 mt-1">{event.description}</p>
-                        
-                        <div className="text-[11px] text-[#666666] mt-2 space-y-0.5">
-                          <div>Venue: <strong className="text-[#171717]">{event.venue}</strong></div>
-                          <div>Time: <strong>{event.time}</strong></div>
+                        <div className="pt-2 border-t border-[#E5E5E5] flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              setActiveEvent(event);
+                              setEventModalMode('edit');
+                            }}
+                            className="px-3 py-1 bg-white hover:bg-[#FAFAFA] text-[#171717] rounded-lg border border-[#E5E5E5] text-xs font-bold cursor-pointer flex items-center gap-1"
+                          >
+                            <Edit3 className="w-3 h-3 text-[#B5121B]" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm(`Remove event "${event.title}"?`)) deleteEvent(event.id);
+                            }}
+                            className="px-3 py-1 bg-white hover:bg-[#FDECEC] text-[#8B0000] rounded-lg border border-[#E5E5E5] text-xs font-bold cursor-pointer flex items-center gap-1"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Delete</span>
+                          </button>
                         </div>
                       </div>
-
-                      <div className="pt-2 border-t border-[#E5E5E5] flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => {
-                            setActiveEvent(event);
-                            setEventModalMode('edit');
-                          }}
-                          className="px-3 py-1 bg-white hover:bg-[#FAFAFA] text-[#171717] rounded-lg border border-[#E5E5E5] text-xs font-bold cursor-pointer flex items-center gap-1"
-                        >
-                          <Edit3 className="w-3 h-3 text-[#B5121B]" />
-                          <span>Edit</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Remove event "${event.title}"?`)) deleteEvent(event.id);
-                          }}
-                          className="px-3 py-1 bg-white hover:bg-[#FDECEC] text-[#8B0000] rounded-lg border border-[#E5E5E5] text-xs font-bold cursor-pointer flex items-center gap-1"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                          <span>Delete</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -1322,49 +1355,57 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                   </button>
                 </div>
 
-                <div className="space-y-3 pt-2">
-                  {fellowships.map((f) => (
-                    <div
-                      key={f.id}
-                      className="p-4 bg-[#FAFAFA] rounded-xl border border-[#E5E5E5] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-black text-[#B5121B]">{f.acronym}</span>
-                          <span className="text-[10px] font-bold uppercase text-[#8B0000] bg-[#FDECEC] px-2 py-0.5 rounded border border-[#F8D0D0]">
-                            {f.category}
-                          </span>
+                {fellowships.length === 0 ? (
+                  <div className="p-8 text-center bg-[#FAFAFA] rounded-xl border border-dashed border-[#E5E5E5] space-y-2">
+                    <Users className="w-8 h-8 text-[#B5121B] mx-auto opacity-70" />
+                    <p className="text-sm font-bold text-[#171717]">No Member Fellowships Registered in Database</p>
+                    <p className="text-xs text-[#666666]">Click "Register Fellowship" above to record a fellowship into the database.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 pt-2">
+                    {fellowships.map((f) => (
+                      <div
+                        key={f.id}
+                        className="p-4 bg-[#FAFAFA] rounded-xl border border-[#E5E5E5] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-black text-[#B5121B]">{f.acronym}</span>
+                            <span className="text-[10px] font-bold uppercase text-[#8B0000] bg-[#FDECEC] px-2 py-0.5 rounded border border-[#F8D0D0]">
+                              {f.category}
+                            </span>
+                          </div>
+                          <h4 className="text-sm font-bold text-[#171717]">{f.name}</h4>
+                          <div className="text-xs text-[#666666]">
+                            Venue: <strong>{f.meetingVenue}</strong> • President: <strong>{f.presidentName}</strong> ({f.presidentContact})
+                          </div>
                         </div>
-                        <h4 className="text-sm font-bold text-[#171717]">{f.name}</h4>
-                        <div className="text-xs text-[#666666]">
-                          Venue: <strong>{f.meetingVenue}</strong> • President: <strong>{f.presidentName}</strong> ({f.presidentContact})
-                        </div>
-                      </div>
 
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            setActiveFellowship(f);
-                            setFellowshipModalMode('edit');
-                          }}
-                          className="p-2 text-[#666666] hover:text-[#B5121B] bg-white rounded-lg border border-[#E5E5E5] transition-colors cursor-pointer shrink-0"
-                          title="Edit"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Remove fellowship "${f.name}"?`)) deleteFellowship(f.id);
-                          }}
-                          className="p-2 text-[#666666] hover:text-[#B5121B] bg-white rounded-lg border border-[#E5E5E5] transition-colors cursor-pointer shrink-0"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              setActiveFellowship(f);
+                              setFellowshipModalMode('edit');
+                            }}
+                            className="p-2 text-[#666666] hover:text-[#B5121B] bg-white rounded-lg border border-[#E5E5E5] transition-colors cursor-pointer shrink-0"
+                            title="Edit"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm(`Remove fellowship "${f.name}"?`)) deleteFellowship(f.id);
+                            }}
+                            className="p-2 text-[#666666] hover:text-[#B5121B] bg-white rounded-lg border border-[#E5E5E5] transition-colors cursor-pointer shrink-0"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -1410,47 +1451,55 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                  {executives.map((exec) => (
-                    <div
-                      key={exec.id}
-                      className="p-4 bg-[#FAFAFA] rounded-xl border border-[#E5E5E5] flex items-center gap-3.5"
-                    >
-                      <img
-                        src={exec.photoUrl}
-                        alt={exec.name}
-                        className="w-12 h-12 rounded-xl object-cover border border-[#E5E5E5] shrink-0"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <span className="text-[10px] font-black uppercase text-[#8B0000] block truncate">
-                          {exec.office}
-                        </span>
-                        <h4 className="text-xs sm:text-sm font-bold text-[#171717] truncate">{exec.name}</h4>
-                        <span className="text-[11px] text-[#666666] block truncate">{exec.department} • {exec.phone}</span>
+                {executives.length === 0 ? (
+                  <div className="p-8 text-center bg-[#FAFAFA] rounded-xl border border-dashed border-[#E5E5E5] space-y-2">
+                    <Award className="w-8 h-8 text-[#B5121B] mx-auto opacity-70" />
+                    <p className="text-sm font-bold text-[#171717]">No Executive Officers in Database</p>
+                    <p className="text-xs text-[#666666]">Click "Add Executive Officer" above to add current session leaders to the database.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    {executives.map((exec) => (
+                      <div
+                        key={exec.id}
+                        className="p-4 bg-[#FAFAFA] rounded-xl border border-[#E5E5E5] flex items-center gap-3.5"
+                      >
+                        <img
+                          src={exec.photoUrl}
+                          alt={exec.name}
+                          className="w-12 h-12 rounded-xl object-cover border border-[#E5E5E5] shrink-0"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[10px] font-black uppercase text-[#8B0000] block truncate">
+                            {exec.office}
+                          </span>
+                          <h4 className="text-xs sm:text-sm font-bold text-[#171717] truncate">{exec.name}</h4>
+                          <span className="text-[11px] text-[#666666] block truncate">{exec.department} • {exec.phone}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => {
+                              setActiveExecutive(exec);
+                              setExecutiveModalMode('edit');
+                            }}
+                            className="p-1.5 text-[#666666] hover:text-[#B5121B] bg-white rounded-lg border border-[#E5E5E5] transition-colors cursor-pointer shrink-0"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm(`Remove "${exec.name}" from council?`)) deleteExecutive(exec.id);
+                            }}
+                            className="p-1.5 text-[#666666] hover:text-[#B5121B] bg-white rounded-lg border border-[#E5E5E5] transition-colors cursor-pointer shrink-0"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => {
-                            setActiveExecutive(exec);
-                            setExecutiveModalMode('edit');
-                          }}
-                          className="p-1.5 text-[#666666] hover:text-[#B5121B] bg-white rounded-lg border border-[#E5E5E5] transition-colors cursor-pointer shrink-0"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Remove "${exec.name}" from council?`)) deleteExecutive(exec.id);
-                          }}
-                          className="p-1.5 text-[#666666] hover:text-[#B5121B] bg-white rounded-lg border border-[#E5E5E5] transition-colors cursor-pointer shrink-0"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Past Generations / Historical Archives */}
                 <div className="border-t border-[#E5E5E5] pt-6 mt-6 space-y-4">
@@ -1484,69 +1533,77 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {historicalExecutives.map((item) => (
-                      <div
-                        key={item.id || item.tenure}
-                        className="p-4 bg-[#FAFAFA] rounded-2xl border border-[#E5E5E5] flex flex-col justify-between space-y-3"
-                      >
-                        <div className="space-y-1">
-                          <div className="flex justify-between items-start gap-2">
-                            <div>
-                              <span className="text-[10px] font-bold text-[#B5121B] tracking-wider uppercase bg-[#B5121B]/5 border border-[#B5121B]/10 px-2 py-0.5 rounded-md">
-                                {item.generation || 'Past Gen'}
-                              </span>
-                              <h4 className="text-sm font-black text-[#171717] mt-1.5">{item.generationName}</h4>
+                  {historicalExecutives.length === 0 ? (
+                    <div className="p-6 text-center bg-[#FAFAFA] rounded-xl border border-dashed border-[#E5E5E5] space-y-1.5">
+                      <Award className="w-7 h-7 text-[#B5121B] mx-auto opacity-70" />
+                      <p className="text-xs font-bold text-[#171717]">No Historical Administrations in Database</p>
+                      <p className="text-[11px] text-[#666666]">Click "Input Past Executive Record" or use "Archive & Handover" when a tenure completes.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {historicalExecutives.map((item) => (
+                        <div
+                          key={item.id || item.tenure}
+                          className="p-4 bg-[#FAFAFA] rounded-2xl border border-[#E5E5E5] flex flex-col justify-between space-y-3"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex justify-between items-start gap-2">
+                              <div>
+                                <span className="text-[10px] font-bold text-[#B5121B] tracking-wider uppercase bg-[#B5121B]/5 border border-[#B5121B]/10 px-2 py-0.5 rounded-md">
+                                  {item.generation || 'Past Gen'}
+                                </span>
+                                <h4 className="text-sm font-black text-[#171717] mt-1.5">{item.generationName}</h4>
+                              </div>
+                              <span className="text-xs font-semibold text-[#666666] font-mono">{item.tenure}</span>
                             </div>
-                            <span className="text-xs font-semibold text-[#666666] font-mono">{item.tenure}</span>
+
+                            <div className="text-xs text-[#171717] space-y-1 pt-1.5">
+                              <div><strong>President:</strong> {item.president}</div>
+                              {item.executivesList && (
+                                <div className="text-[11px] text-[#666666] line-clamp-2">
+                                  <strong>Officers:</strong> {item.executivesList}
+                                </div>
+                              )}
+                              {item.theme && (
+                                <div className="text-[11px] italic text-[#666666]">
+                                  &ldquo;{item.theme}&rdquo;
+                                </div>
+                              )}
+                            </div>
                           </div>
 
-                          <div className="text-xs text-[#171717] space-y-1 pt-1.5">
-                            <div><strong>President:</strong> {item.president}</div>
-                            {item.executivesList && (
-                              <div className="text-[11px] text-[#666666] line-clamp-2">
-                                <strong>Officers:</strong> {item.executivesList}
-                              </div>
-                            )}
-                            {item.theme && (
-                              <div className="text-[11px] italic text-[#666666]">
-                                &ldquo;{item.theme}&rdquo;
-                              </div>
-                            )}
+                          <div className="flex items-center justify-between border-t border-[#E5E5E5] pt-3 mt-1">
+                            <span className="text-[10px] text-[#666666] font-semibold">
+                              {item.keyAchievements?.length || 0} achievements recorded
+                            </span>
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => {
+                                  setActiveHistoricalExecutive(item);
+                                  setHistoricalModalMode('edit');
+                                }}
+                                className="p-1.5 text-[#666666] hover:text-[#B5121B] bg-white rounded-lg border border-[#E5E5E5] transition-colors cursor-pointer shrink-0"
+                                title="Edit Record"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Delete historical record for "${item.generationName}" (${item.tenure})?`)) {
+                                    deleteHistoricalExecutive(item.id || item.tenure);
+                                  }
+                                }}
+                                className="p-1.5 text-[#666666] hover:text-[#B5121B] bg-white rounded-lg border border-[#E5E5E5] transition-colors cursor-pointer shrink-0"
+                                title="Delete Record"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
                         </div>
-
-                        <div className="flex items-center justify-between border-t border-[#E5E5E5] pt-3 mt-1">
-                          <span className="text-[10px] text-[#666666] font-semibold">
-                            {item.keyAchievements?.length || 0} achievements recorded
-                          </span>
-                          <div className="flex gap-1.5">
-                            <button
-                              onClick={() => {
-                                setActiveHistoricalExecutive(item);
-                                setHistoricalModalMode('edit');
-                              }}
-                              className="p-1.5 text-[#666666] hover:text-[#B5121B] bg-white rounded-lg border border-[#E5E5E5] transition-colors cursor-pointer shrink-0"
-                              title="Edit Record"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (confirm(`Delete historical record for "${item.generationName}" (${item.tenure})?`)) {
-                                  deleteHistoricalExecutive(item.id || item.tenure);
-                                }
-                              }}
-                              className="p-1.5 text-[#666666] hover:text-[#B5121B] bg-white rounded-lg border border-[#E5E5E5] transition-colors cursor-pointer shrink-0"
-                              title="Delete Record"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
               </div>
@@ -1580,45 +1637,53 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                   </button>
                 </div>
 
-                <div className="space-y-3 pt-2">
-                  {resources.map((res) => (
-                    <div
-                      key={res.id}
-                      className="p-4 bg-[#FAFAFA] rounded-xl border border-[#E5E5E5] flex items-center justify-between gap-4"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-black uppercase text-[#8B0000] bg-[#FDECEC] px-2 py-0.5 rounded border border-[#F8D0D0]">
-                            {res.fileType} • {res.fileSize}
-                          </span>
-                          <span className="text-xs text-[#666666]">{res.category}</span>
+                {resources.length === 0 ? (
+                  <div className="p-8 text-center bg-[#FAFAFA] rounded-xl border border-dashed border-[#E5E5E5] space-y-2">
+                    <BookOpen className="w-8 h-8 text-[#B5121B] mx-auto opacity-70" />
+                    <p className="text-sm font-bold text-[#171717]">No Documents or Manuals in Database</p>
+                    <p className="text-xs text-[#666666]">Click "Upload Document / Manual" above to add constitutions, study guides, or circular PDFs.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 pt-2">
+                    {resources.map((res) => (
+                      <div
+                        key={res.id}
+                        className="p-4 bg-[#FAFAFA] rounded-xl border border-[#E5E5E5] flex items-center justify-between gap-4"
+                      >
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase text-[#8B0000] bg-[#FDECEC] px-2 py-0.5 rounded border border-[#F8D0D0]">
+                              {res.fileType} • {res.fileSize}
+                            </span>
+                            <span className="text-xs text-[#666666]">{res.category}</span>
+                          </div>
+                          <h4 className="text-xs sm:text-sm font-bold text-[#171717] mt-1">{res.title}</h4>
+                          <span className="text-[11px] text-[#666666]">Downloads: <strong>{(Number(res.downloadCount) || 0).toLocaleString()}</strong></span>
                         </div>
-                        <h4 className="text-xs sm:text-sm font-bold text-[#171717] mt-1">{res.title}</h4>
-                        <span className="text-[11px] text-[#666666]">Downloads: <strong>{(Number(res.downloadCount) || 0).toLocaleString()}</strong></span>
-                      </div>
 
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            setActiveResource(res);
-                            setResourceModalMode('edit');
-                          }}
-                          className="p-2 text-[#666666] hover:text-[#B5121B] bg-white rounded-lg border border-[#E5E5E5] cursor-pointer"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Remove resource "${res.title}"?`)) deleteResource(res.id);
-                          }}
-                          className="p-2 text-[#666666] hover:text-[#B5121B] bg-white rounded-lg border border-[#E5E5E5] cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              setActiveResource(res);
+                              setResourceModalMode('edit');
+                            }}
+                            className="p-2 text-[#666666] hover:text-[#B5121B] bg-white rounded-lg border border-[#E5E5E5] cursor-pointer"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm(`Remove resource "${res.title}"?`)) deleteResource(res.id);
+                            }}
+                            className="p-2 text-[#666666] hover:text-[#B5121B] bg-white rounded-lg border border-[#E5E5E5] cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -1677,40 +1742,50 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#E5E5E5]">
-                      {filteredDonations.map((d) => (
-                        <tr key={d.id} className="hover:bg-[#FAFAFA]">
-                          <td className="p-3 font-mono font-bold text-[#8B0000]">{d.reference}</td>
-                          <td className="p-3 font-semibold text-[#171717]">
-                            <div>{d.donorName}</div>
-                            {d.donorPhone && <span className="text-[10px] text-[#666666]">{d.donorPhone}</span>}
-                          </td>
-                          <td className="p-3">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              d.paymentMethod === 'OPay'
-                                ? 'bg-[#00B875]/10 text-[#008753] border border-[#00B875]/30'
-                                : d.paymentMethod === 'PalmPay'
-                                ? 'bg-[#6F32E2]/10 text-[#6F32E2] border border-[#6F32E2]/30'
-                                : 'bg-[#FDECEC] text-[#8B0000] border border-[#F8D0D0]'
-                            }`}>
-                              {d.paymentMethod}
-                            </span>
-                          </td>
-                          <td className="p-3 text-[#666666] max-w-[200px] truncate">{d.purpose}</td>
-                          <td className="p-3 font-bold text-[#171717]">₦{(Number(d?.amount) || 0).toLocaleString()}</td>
-                          <td className="p-3 text-[#666666]">{d.date}</td>
-                          <td className="p-3">
-                            <button
-                              onClick={() => {
-                                if (confirm(`Remove donation record ${d.reference}?`)) deleteDonation(d.id);
-                              }}
-                              className="p-1 text-[#666666] hover:text-[#B5121B] cursor-pointer"
-                              title="Delete Record"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                      {filteredDonations.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="p-8 text-center text-[#666666]">
+                            <Heart className="w-6 h-6 text-[#B5121B] mx-auto mb-2 opacity-60" />
+                            <p className="font-bold text-[#171717]">No Donation Records in Database</p>
+                            <p className="text-[11px] mt-0.5">When online partners make financial contributions via OPay or PalmPay, records will show here.</p>
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        filteredDonations.map((d) => (
+                          <tr key={d.id} className="hover:bg-[#FAFAFA]">
+                            <td className="p-3 font-mono font-bold text-[#8B0000]">{d.reference}</td>
+                            <td className="p-3 font-semibold text-[#171717]">
+                              <div>{d.donorName}</div>
+                              {d.donorPhone && <span className="text-[10px] text-[#666666]">{d.donorPhone}</span>}
+                            </td>
+                            <td className="p-3">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                d.paymentMethod === 'OPay'
+                                  ? 'bg-[#00B875]/10 text-[#008753] border border-[#00B875]/30'
+                                  : d.paymentMethod === 'PalmPay'
+                                  ? 'bg-[#6F32E2]/10 text-[#6F32E2] border border-[#6F32E2]/30'
+                                  : 'bg-[#FDECEC] text-[#8B0000] border border-[#F8D0D0]'
+                              }`}>
+                                {d.paymentMethod}
+                              </span>
+                            </td>
+                            <td className="p-3 text-[#666666] max-w-[200px] truncate">{d.purpose}</td>
+                            <td className="p-3 font-bold text-[#171717]">₦{(Number(d?.amount) || 0).toLocaleString()}</td>
+                            <td className="p-3 text-[#666666]">{d.date}</td>
+                            <td className="p-3">
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Remove donation record ${d.reference}?`)) deleteDonation(d.id);
+                                }}
+                                className="p-1 text-[#666666] hover:text-[#B5121B] cursor-pointer"
+                                title="Delete Record"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>

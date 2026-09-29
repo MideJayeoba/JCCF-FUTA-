@@ -125,10 +125,16 @@ export const Hero: React.FC<HeroProps> = ({
             {/* Key Campus Stat */}
             <div className="pt-6 border-t border-[#E5E5E5] flex flex-wrap items-center gap-4">
               <div className="inline-flex items-center gap-3.5 bg-white px-4 py-3 rounded-2xl border border-[#E5E5E5] shadow-xs">
-                <span className="text-3xl sm:text-4xl font-black text-[#B5121B] font-heading">24+</span>
+                <span className="text-3xl sm:text-4xl font-black text-[#B5121B] font-heading">
+                  {fellowships.length > 0 ? `${fellowships.length}+` : '0'}
+                </span>
                 <div className="text-left">
-                  <span className="text-sm font-extrabold text-[#171717] block font-heading">Fellowships Across FUTA</span>
-                  <span className="text-xs text-[#666666]">Registered Christian campus fellowships united under JCCF</span>
+                  <span className="text-sm font-extrabold text-[#171717] block font-heading">
+                    {fellowships.length === 1 ? '1 Fellowship Registered' : `${fellowships.length} Fellowships Registered`}
+                  </span>
+                  <span className="text-xs text-[#666666]">
+                    {fellowships.length === 0 ? 'No fellowships currently recorded in database' : 'Christian campus fellowships registered under JCCF'}
+                  </span>
                 </div>
               </div>
             </div>
